@@ -1090,6 +1090,7 @@ function buildActionsTable(mode) {
 
   countries.forEach(c => {
     const vols = volStore[c.name] || [0,0,0,0,0];
+    if (c.name.includes('U.S.')) console.log('buildActionsTable U.S. vols:', vols, 'from store:', volStore[c.name]);
     const rowTotal = vols.reduce((a,b)=>a+b,0);
     vols.forEach((v,i)=>totalVols[i]+=v);
     const tc = c.tier===1?'t1':c.tier===2?'t2':'t3';
@@ -1328,6 +1329,7 @@ function applyVolumesFromRows(rows, mode) {
     const refreshes = cols.refreshes >= 0 ? (cleanNum(r[cols.refreshes]) || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.refreshes));
     const intakes   = cols.intakes   >= 0 ? (cleanNum(r[cols.intakes])   || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.intakes));
     store[match.name] = [onboards, leavers, itad, refreshes, intakes];
+    if (match.name.includes('U.S.')) console.log('Wrote U.S.:', store[match.name], 'from row', r.slice(0,8));
     matched++;
   }
   return { matched, detectedCols };
