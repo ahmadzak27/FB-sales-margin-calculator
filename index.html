@@ -953,7 +953,9 @@ function csvUrl(gid) {
 function parseCSV(text) {
   const rows = [];
   let cur = '', inQ = false, row = [];
-  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Replace \r\n row separators with \r (sentinel), leave bare \n (in-cell) alone
+  text = text.replace(/\r\n/g, '\r');
+  // Any remaining bare \r → \r, bare \n inside quoted cells will be spaces
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
@@ -961,12 +963,15 @@ function parseCSV(text) {
       else inQ = !inQ;
     } else if (ch === ',' && !inQ) {
       row.push(cur.trim()); cur = '';
-    } else if (ch === '\n' && !inQ) {
+    } else if (ch === '\r' && !inQ) {
+      // Real row break
       row.push(cur.trim()); cur = '';
       if (row.some(c => c !== '')) rows.push(row);
       row = [];
-    } else if (ch === '\n' && inQ) {
-      cur += ' '; // replace in-cell newline with space
+    } else if (ch === '\n') {
+      // Bare \n — always in-cell (we already converted \r\n to \r)
+      if (inQ) cur += ' ';
+      // else ignore stray \n outside quotes
     } else {
       cur += ch;
     }
