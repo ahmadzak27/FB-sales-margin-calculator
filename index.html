@@ -1328,6 +1328,16 @@ function applyVolumesFromRows(rows, mode) {
     const itad      = cols.itad      >= 0 ? (cleanNum(r[cols.itad])      || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.itad));
     const refreshes = cols.refreshes >= 0 ? (cleanNum(r[cols.refreshes]) || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.refreshes));
     const intakes   = cols.intakes   >= 0 ? (cleanNum(r[cols.intakes])   || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.intakes));
+    // Skip rows with no usable volume data (e.g. summary/total rows at bottom of sheet)
+    if (onboards === 0 && leavers === 0 && itad === 0 && refreshes === 0 && intakes === 0) {
+      // Only skip if FTE is also 0 — means truly empty row
+      if (fteVal === 0) continue;
+    }
+    // Don't overwrite a good record with zeros — only write if this row has more data
+    const existing = store[match.name] || [0,0,0,0,0];
+    const existingSum = existing.reduce((a,b)=>a+b,0);
+    const newSum = onboards + leavers + itad + refreshes + intakes;
+    if (existingSum > 0 && newSum === 0) continue; // skip zero overwrites
     store[match.name] = [onboards, leavers, itad, refreshes, intakes];
     if (match.name.includes('U.S.')) console.log('Wrote U.S.:', store[match.name], 'from row', r.slice(0,8));
     matched++;
