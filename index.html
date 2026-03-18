@@ -1421,8 +1421,8 @@ function renderSettingsTables() {
   let pb='';
   countries.forEach(c=>{
     const tc=c.tier===1?'tier1-row':'tier2-row';
-    const refreshP = (c.prices[0]||0) + (c.prices[4]||0);
-    const refreshC = (c.costs[0]||0)  + (c.costs[4]||0);
+    const refreshP = (c.prices[0]||0) + (c.prices[5]||0);
+    const refreshC = (c.costs[0]||0)  + (c.costs[5]||0);
     pb+=`<tr class="${tc}"><td>${c.name}</td><td>${fmt(c.prices[0])}</td><td>${refreshP?fmt(refreshP):'<span class="null-cell">—</span>'}</td><td>${fmt(c.prices[4])}</td><td>${fmt(c.prices[5])}</td><td>${fmt(c.prices[6])}</td><td>${c.prices[1]?fmt(c.prices[1]):'<span class="null-cell">—</span>'}</td></tr>`;
   });
   document.getElementById('pricesBody').innerHTML=pb;
@@ -1463,8 +1463,8 @@ function calcActions(volStore) {
   countries.forEach(c=>{
     const v=volStore[c.name]||[0,0,0,0,0];
     const p=c.prices, co=c.costs;
-    const rev = (p[0]||0)*v[0]+(p[4]||0)*v[1]+(p[5]||0)*v[2]+((p[0]||0)+(p[4]||0))*v[3]+(p[6]||0)*v[4];
-    const cst = (co[0]||0)*v[0]+(co[4]||0)*v[1]+(co[5]||0)*v[2]+((co[0]||0)+(co[4]||0))*v[3]+(co[6]||0)*v[4];
+    const rev = (p[0]||0)*v[0]+(p[4]||0)*v[1]+(p[5]||0)*v[2]+((p[0]||0)+(p[5]||0))*v[3]+(p[6]||0)*v[4];
+    const cst = (co[0]||0)*v[0]+(co[4]||0)*v[1]+(co[5]||0)*v[2]+((co[0]||0)+(co[5]||0))*v[3]+(co[6]||0)*v[4];
     if(rev>0||v.some(x=>x>0)) breakdown.push({name:c.name,vols:v,rev,cost:cst,margin:rev>0?(rev-cst)/rev:0});
     grossRev+=rev; cost+=cst;
   });
