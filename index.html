@@ -760,7 +760,7 @@
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-family:var(--mono);font-size:11px;color:var(--text3);white-space:nowrap;">📋 SHEET LINK</span>
-        <input type="text" id="sheetUrlInput" placeholder="Paste Google Sheet URL — sheet must be public (anyone with link can view)" style="flex:1;min-width:260px;font-size:12px;padding:7px 11px;border-radius:8px;border:1px solid var(--border2);font-family:var(--mono);" oninput="onSheetUrlInput()">
+        <input type="text" id="sheetUrlInput" placeholder="Paste published CSV URL — File → Share → Publish to web → select tab → CSV" style="flex:1;min-width:260px;font-size:12px;padding:7px 11px;border-radius:8px;border:1px solid var(--border2);font-family:var(--mono);" oninput="onSheetUrlInput()">
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
           <select id="sheetGidSelect" style="font-size:12px;padding:7px 28px 7px 10px;border-radius:8px;border:1px solid var(--border2);display:none;" onchange="onSheetUrlInput()"></select>
           <button class="btn btn-primary" id="fetchSheetBtn" onclick="fetchSheetFromUrl()" style="white-space:nowrap;display:none;">⬇ Import</button>
@@ -946,21 +946,33 @@ function showPage(name, btn) {
 // GOOGLE SHEETS FETCH
 // ============================================================
 function csvUrl(gid) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  // Use publish-to-web URL which serves CSV with CORS headers — no proxy needed
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${gid}&single=true&output=csv`;
 }
 
 function parseCSV(text) {
-  return text.trim().split('\n').map(line => {
-    const result = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') { inQ = !inQ; }
-      else if (line[i] === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
-      else { cur += line[i]; }
+  const rows = [];
+  let cur = '', inQ = false, row = [];
+  // Normalize line endings
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      // Handle escaped quotes ""
+      if (inQ && text[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      row.push(cur.trim()); cur = '';
+    } else if (ch === '\n' && !inQ) {
+      row.push(cur.trim()); cur = '';
+      rows.push(row); row = [];
+    } else {
+      // Replace in-cell newlines with a space
+      cur += (ch === '\n' && inQ) ? ' ' : ch;
     }
-    result.push(cur.trim());
-    return result;
-  });
+  }
+  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
+  return rows.filter(r => r.some(c => c !== ''));
 }
 
 function cleanNum(s) {
@@ -1225,8 +1237,13 @@ async function fetchSheetFromUrl() {
   const id = extractSheetId(url);
   if (!id) return;
   const gid = gidSel.value || extractGid(url);
-  const sheetUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
-  const fetchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetUrl)}`;
+  // Use publish-to-web URL — works without a proxy, sheet must be published (File > Share > Publish to web)
+  // Also accept if user pasted a pub URL directly
+  const rawUrl = document.getElementById('sheetUrlInput').value.trim();
+  const isPubUrl = rawUrl.includes('/pub?') || rawUrl.includes('&output=csv');
+  const fetchUrl = isPubUrl
+    ? rawUrl  // use the pub URL directly as pasted
+    : `https://docs.google.com/spreadsheets/d/${id}/pub?gid=${gid}&single=true&output=csv`;
 
   status.style.display = 'block';
   status.style.color = 'var(--text3)';
@@ -1235,9 +1252,9 @@ async function fetchSheetFromUrl() {
 
   try {
     const r = await fetch(fetchUrl);
-    if (!r.ok) throw new Error('HTTP ' + r.status + ' — is the sheet set to "Anyone with the link can view"?');
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — publish the sheet first: File → Share → Publish to web → select tab → CSV → Publish, then paste that URL');
     const text = await r.text();
-    if (text.trim().startsWith('<')) throw new Error('Got HTML instead of CSV — make sure the sheet is set to "Anyone with the link can view" and try again');
+    if (text.trim().startsWith('<')) throw new Error('Got HTML instead of CSV — go to File → Share → Publish to web, publish the tab as CSV, and paste that URL instead');
     const rows = parseCSV(text);
     if (rows.length < 2) throw new Error('Sheet appears empty or has no data rows');
     const { matched, detectedCols } = applyVolumesFromRows(rows, currentActTab);
@@ -1316,12 +1333,13 @@ function handleCSVUpload(event) {
   reader.onload = function(e) {
     const rows = parseCSV(e.target.result);
     if(rows.length<2) return alert('CSV appears empty');
-    const { matched } = applyVolumesFromRows(rows, currentActTab);
+    const { matched, detectedCols } = applyVolumesFromRows(rows, currentActTab);
     buildActionsTable(currentActTab);
     recalc();
     const uz=document.getElementById('uploadZone');
     uz.classList.add('upload-success');
     uz.querySelector('.upload-zone-title').textContent=matched>0?`✓ Loaded ${matched} countries from ${file.name}`:'⚠ No countries matched — check column headers';
+    uz.querySelector('.upload-zone-sub').textContent=`Columns detected: ${detectedCols}`;
     event.target.value='';
   };
   reader.readAsText(file);
