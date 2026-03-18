@@ -405,6 +405,53 @@
     border-left: 5px solid transparent; border-right: 5px solid transparent;
     border-top: 5px solid #1a2235;
   }
+
+  /* SUBMIT BUTTON + MODAL */
+  .submit-btn {
+    background: var(--green); color: #fff;
+    font-family: var(--display); font-size: 13px; font-weight: 700;
+    padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+    transition: all 0.15s; letter-spacing: 0.2px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .submit-btn:hover { background: #158a4f; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,158,92,0.3); }
+  .submit-btn:disabled { background: var(--text3); cursor: not-allowed; transform: none; box-shadow: none; }
+  .submit-area {
+    background: var(--green-dim); border: 1px solid var(--green);
+    border-radius: var(--radius-lg); padding: 16px 22px;
+    display: flex; align-items: center; justify-content: space-between; margin-top: 12px;
+  }
+  .submit-area-label { font-family: var(--display); font-size: 13px; font-weight: 600; color: var(--green); }
+  .submit-area-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .submit-status { font-family: var(--mono); font-size: 11px; margin-top: 6px; }
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(3,14,36,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    padding: 28px 32px; max-width: 440px; width: 90%;
+    box-shadow: 0 20px 60px rgba(3,14,36,0.25);
+    transform: translateY(12px); transition: transform 0.2s;
+  }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-title { font-family: var(--display); font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; justify-content: flex-end; }
+  .modal-cancel { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); font-family: var(--display); font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 8px; cursor: pointer; }
+  .modal-cancel:hover { background: var(--surface3); }
+  .modal-confirm { background: var(--green); color: #fff; font-family: var(--display); font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; }
+  .modal-confirm:hover { background: #158a4f; }
+  .modal-confirm:disabled { background: var(--text3); cursor: not-allowed; }
+  .modal-success { text-align: center; padding: 10px 0; }
+  .modal-success-icon { font-size: 40px; margin-bottom: 10px; }
+  .modal-success-title { font-family: var(--display); font-size: 18px; font-weight: 800; color: var(--green); margin-bottom: 6px; }
+  .modal-success-sub { font-size: 13px; color: var(--text2); }
 </style>
 </head>
 <body>
@@ -543,6 +590,22 @@
       <div id="actionDiscountInfo" class="tier-badge" style="margin-top:8px;display:none;">
         <span id="actionDiscountDisplay">—</span>
       </div>
+      <div class="field" style="margin-top:12px;">
+        <div class="field-label">
+          <span>Override Action Discount? <span class="tip-icon" data-tip-title="Action Discount Override" data-tip="By default the discount is auto-looked up from the volume discount tier table based on gross action ARR. Use this to manually set a specific discount % — e.g. for a negotiated rate.">?</span></span>
+        </div>
+        <select id="overrideActDisc" onchange="onActDiscOverrideChange()">
+          <option value="no">No — Auto from volume tier</option>
+          <option value="yes">Yes — Manual override</option>
+        </select>
+      </div>
+      <div class="field" id="actDiscOverrideField" style="display:none;">
+        <div class="field-label">Action Discount %</div>
+        <div class="input-suffix">
+          <input type="number" id="actDiscOverrideVal" value="0" min="0" max="100" step="0.5" oninput="recalc()">
+          <span>%</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -641,6 +704,32 @@
       </div>
       <button class="btn-snap" onclick="copySnapshot()">📋 Copy Snapshot</button>
     </div>
+
+    <div class="submit-area">
+      <div>
+        <div class="submit-area-label">✅ Submit Deal for Review</div>
+        <div class="submit-area-sub">Logs this deal to the central submissions sheet for tracking &amp; comparison</div>
+        <div class="submit-status" id="submitStatus"></div>
+      </div>
+      <button class="submit-btn" id="submitBtn" onclick="openSubmitModal()">
+        <span>🚀</span> Submit Deal
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div id="modalContent">
+      <div class="modal-title">Submit Deal</div>
+      <div class="modal-sub">Review the details below before submitting. This will log a permanent record to the deals sheet.</div>
+      <div id="modalSummary" style="background:var(--surface2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.9;font-family:var(--mono);"></div>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeSubmitModal()">Cancel</button>
+        <button class="modal-confirm" id="modalConfirmBtn" onclick="submitDeal()">Confirm &amp; Submit</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -738,7 +827,7 @@
       </div>
       <div style="overflow-x:auto;">
         <table class="settings-table" id="pricesTable">
-          <thead><tr><th>Country</th><th>Order</th><th>Return</th><th>ITAD</th><th>Intake</th><th>Expedited</th></tr></thead>
+          <thead><tr><th>Country</th><th>Order</th><th>Refresh</th><th>Return</th><th>ITAD</th><th>Intake</th><th>Expedited</th></tr></thead>
           <tbody id="pricesBody"></tbody>
         </table>
       </div>
@@ -856,7 +945,10 @@ function showPage(name, btn) {
 // ============================================================
 // GOOGLE SHEETS FETCH
 // ============================================================
-function csvUrl(gid) { return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`; }
+function csvUrl(gid) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+}
 
 function parseCSV(text) {
   return text.trim().split('\n').map(line => {
@@ -1133,7 +1225,8 @@ async function fetchSheetFromUrl() {
   const id = extractSheetId(url);
   if (!id) return;
   const gid = gidSel.value || extractGid(url);
-  const fetchUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+  const sheetUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+  const fetchUrl = `https://corsproxy.io/?${encodeURIComponent(sheetUrl)}`;
 
   status.style.display = 'block';
   status.style.color = 'var(--text3)';
@@ -1142,7 +1235,7 @@ async function fetchSheetFromUrl() {
 
   try {
     const r = await fetch(fetchUrl);
-    if (!r.ok) throw new Error('HTTP ' + r.status + ' — is the sheet set to "Anyone with the link can view"?');
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — is the sheet set to "Anyone with the link can view"? (If so, corsproxy.io may be temporarily down — try again in a moment)');
     const text = await r.text();
     const rows = parseCSV(text);
     if (rows.length < 2) throw new Error('Sheet appears empty or has no data rows');
@@ -1267,7 +1360,9 @@ function renderSettingsTables() {
   let pb='';
   countries.forEach(c=>{
     const tc=c.tier===1?'tier1-row':'tier2-row';
-    pb+=`<tr class="${tc}"><td>${c.name}</td><td>${fmt(c.prices[0])}</td><td>${fmt(c.prices[4])}</td><td>${fmt(c.prices[5])}</td><td>${fmt(c.prices[6])}</td><td>${c.prices[1]?fmt(c.prices[1]):'<span class="null-cell">—</span>'}</td></tr>`;
+    const refreshP = (c.prices[0]||0) + (c.prices[4]||0);
+    const refreshC = (c.costs[0]||0)  + (c.costs[4]||0);
+    pb+=`<tr class="${tc}"><td>${c.name}</td><td>${fmt(c.prices[0])}</td><td>${refreshP?fmt(refreshP):'<span class="null-cell">—</span>'}</td><td>${fmt(c.prices[4])}</td><td>${fmt(c.prices[5])}</td><td>${fmt(c.prices[6])}</td><td>${c.prices[1]?fmt(c.prices[1]):'<span class="null-cell">—</span>'}</td></tr>`;
   });
   document.getElementById('pricesBody').innerHTML=pb;
 
@@ -1307,8 +1402,8 @@ function calcActions(volStore) {
   countries.forEach(c=>{
     const v=volStore[c.name]||[0,0,0,0,0];
     const p=c.prices, co=c.costs;
-    const rev = (p[0]||0)*v[0]+(p[4]||0)*v[1]+(p[5]||0)*v[2]+(p[0]||0)*v[3]+(p[6]||0)*v[4];
-    const cst = (co[0]||0)*v[0]+(co[4]||0)*v[1]+(co[5]||0)*v[2]+(co[0]||0)*v[3]+(co[6]||0)*v[4];
+    const rev = (p[0]||0)*v[0]+(p[4]||0)*v[1]+(p[5]||0)*v[2]+((p[0]||0)+(p[4]||0))*v[3]+(p[6]||0)*v[4];
+    const cst = (co[0]||0)*v[0]+(co[4]||0)*v[1]+(co[5]||0)*v[2]+((co[0]||0)+(co[4]||0))*v[3]+(co[6]||0)*v[4];
     if(rev>0||v.some(x=>x>0)) breakdown.push({name:c.name,vols:v,rev,cost:cst,margin:rev>0?(rev-cst)/rev:0});
     grossRev+=rev; cost+=cst;
   });
@@ -1340,7 +1435,10 @@ function recalc() {
   if(expSeats>0){const et=lookupTier(expSeats);expSaasArr=et?et.arr*(1-disc):0;}
 
   const la=calcActions(landVolumes), ea=calcActions(expansionVolumes);
-  const lDisc=lookupDiscount(la.grossRev), eDisc=lookupDiscount(ea.grossRev);
+  const actDiscOverrideOn = document.getElementById('overrideActDisc').value === 'yes';
+  const actDiscOverridePct = (parseFloat(document.getElementById('actDiscOverrideVal').value) || 0) / 100;
+  const lDisc = actDiscOverrideOn ? actDiscOverridePct : lookupDiscount(la.grossRev);
+  const eDisc = actDiscOverrideOn ? actDiscOverridePct : lookupDiscount(ea.grossRev);
   const lActNet=la.grossRev*(1-lDisc), eActNet=ea.grossRev*(1-eDisc);
 
   const landRev=landSaasArr+lActNet, landCost=landSaasArr*(1-SAAS_MARGIN)+la.cost;
@@ -1383,7 +1481,9 @@ function recalc() {
   if(totalActions>0){
     miniEl.innerHTML=`<span style="font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600;">${totalActions.toLocaleString()}</span> total actions · Gross ARR ${fmt(la.grossRev)}`;
     document.getElementById('actionDiscountInfo').style.display='inline-flex';
-    document.getElementById('actionDiscountDisplay').textContent=`${(lDisc*100).toFixed(1)}% volume discount applied`;
+    document.getElementById('actionDiscountDisplay').textContent=actDiscOverrideOn
+      ? `${(lDisc*100).toFixed(1)}% override applied`
+      : `${(lDisc*100).toFixed(1)}% volume discount applied`;
   } else {
     miniEl.innerHTML='No actions entered yet. <span style="color:var(--accent);cursor:pointer;" onclick="showPage(\'actions\', document.querySelectorAll(\'.nav-tab\')[1])">Go to Actions tab ↗</span>';
     document.getElementById('actionDiscountInfo').style.display='none';
@@ -1464,6 +1564,10 @@ function onSeatsChange() {
 }
 function onOverrideChange() {
   document.getElementById('tierOverrideField').style.display=document.getElementById('overrideTier').value==='yes'?'block':'none';
+  recalc();
+}
+function onActDiscOverrideChange() {
+  document.getElementById('actDiscOverrideField').style.display=document.getElementById('overrideActDisc').value==='yes'?'block':'none';
   recalc();
 }
 
@@ -1650,6 +1754,125 @@ window.addEventListener('DOMContentLoaded', ()=>{ reloadData(); });
     bubble.style.top  = top  + 'px';
   }
 })();
+
+// ============================================================
+// SUBMIT DEAL
+// ============================================================
+// Paste your deployed Apps Script URL here after setup:
+const SUBMIT_URL = '';
+
+function openSubmitModal() {
+  const cust   = document.getElementById('customerName').value.trim() || '—';
+  const ae     = document.getElementById('aeName').value.trim() || '—';
+  const ver    = document.getElementById('dealVersion').value.trim() || '—';
+  const seats  = document.getElementById('seats').value || '0';
+  const tier   = document.getElementById('tierBadgeText').textContent || '—';
+  const sDisc  = document.getElementById('salesDiscount').value || '0';
+  const otDisc = document.getElementById('oneTimeDiscount').value || '0';
+  const status = document.getElementById('approvalTitle').textContent || '—';
+  const s1Saas = document.getElementById('s1SaasArr').textContent;
+  const s1Act  = document.getElementById('s1ActionsArr').textContent;
+  const s1Tot  = document.getElementById('s1TotalArr').textContent;
+  const s1GM   = document.getElementById('s1GM').textContent;
+  const s2Saas = document.getElementById('s2SaasArr').textContent;
+  const s2Act  = document.getElementById('s2ActionsArr').textContent;
+  const s2Tot  = document.getElementById('s2TotalArr').textContent;
+  const s2GM   = document.getElementById('s2GM').textContent;
+  const actD   = document.getElementById('actionDiscountVal').textContent;
+
+  if (cust === '—' || !document.getElementById('customerName').value.trim()) {
+    alert('Please enter a Customer Name before submitting.');
+    return;
+  }
+
+  document.getElementById('modalSummary').innerHTML =
+    `Customer: <strong style="color:var(--text)">${cust}</strong><br>` +
+    `AE: <strong style="color:var(--text)">${ae}</strong> &nbsp;·&nbsp; Version: <strong style="color:var(--text)">${ver}</strong><br>` +
+    `Seats: <strong style="color:var(--text)">${parseInt(seats).toLocaleString()}</strong> &nbsp;·&nbsp; Tier: <strong style="color:var(--text)">${tier}</strong><br>` +
+    `Sales Discount: <strong style="color:var(--text)">${sDisc}%</strong> &nbsp;·&nbsp; One-Time: <strong style="color:var(--text)">$${parseFloat(otDisc).toLocaleString()}</strong> &nbsp;·&nbsp; Action Discount: <strong style="color:var(--text)">${actD}</strong><br>` +
+    `Land ARR: <strong style="color:var(--text)">${s1Tot}</strong> &nbsp;·&nbsp; Land GM: <strong style="color:var(--text)">${s1GM}</strong><br>` +
+    `Land+Exp ARR: <strong style="color:var(--text)">${s2Tot}</strong> &nbsp;·&nbsp; Land+Exp GM: <strong style="color:var(--text)">${s2GM}</strong><br>` +
+    `Status: <strong style="color:var(--text)">${status}</strong>`;
+
+  document.getElementById('submitModal').classList.add('show');
+  document.getElementById('modalContent').innerHTML = document.getElementById('modalContent').innerHTML;
+  // Re-show form state (not success)
+  document.getElementById('modalContent').querySelector('.modal-title') && null;
+  showModalForm();
+}
+
+function showModalForm() {
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-title">Submit Deal</div>
+    <div class="modal-sub">Review the details below before submitting. This will log a permanent record to the deals sheet.</div>
+    <div id="modalSummary" style="background:var(--surface2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.9;font-family:var(--mono);">${document.getElementById('modalSummary') ? document.getElementById('modalSummary').innerHTML : ''}</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeSubmitModal()">Cancel</button>
+      <button class="modal-confirm" id="modalConfirmBtn" onclick="submitDeal()">Confirm &amp; Submit</button>
+    </div>`;
+}
+
+function closeSubmitModal() {
+  document.getElementById('submitModal').classList.remove('show');
+}
+
+async function submitDeal() {
+  if (!SUBMIT_URL) {
+    alert('No submission endpoint configured yet.\n\nSet up the Apps Script (see setup guide) and paste the URL into SUBMIT_URL in the calculator.');
+    return;
+  }
+
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const payload = {
+    timestamp:      new Date().toISOString(),
+    customer:       document.getElementById('customerName').value.trim(),
+    ae:             document.getElementById('aeName').value.trim(),
+    version:        document.getElementById('dealVersion').value.trim(),
+    seats:          document.getElementById('seats').value,
+    tier:           document.getElementById('tierBadgeText').textContent,
+    salesDiscount:  document.getElementById('salesDiscount').value,
+    oneTimeDiscount:document.getElementById('oneTimeDiscount').value,
+    landSaasArr:    document.getElementById('s1SaasArr').textContent,
+    landActionsArr: document.getElementById('s1ActionsArr').textContent,
+    totalLandArr:   document.getElementById('s1TotalArr').textContent,
+    landGM:         document.getElementById('s1GM').textContent,
+    expSaasArr:     document.getElementById('s2SaasArr').textContent,
+    expActionsArr:  document.getElementById('s2ActionsArr').textContent,
+    totalExpArr:    document.getElementById('s2TotalArr').textContent,
+    landExpGM:      document.getElementById('s2GM').textContent,
+    actionDiscount: document.getElementById('actionDiscountVal').textContent + (document.getElementById('overrideActDisc').value==='yes' ? ' (override)' : ''),
+    approvalStatus: document.getElementById('approvalTitle').textContent,
+  };
+
+  try {
+    await fetch(SUBMIT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    // no-cors means we can't read the response — assume success
+    document.getElementById('modalContent').innerHTML = `
+      <div class="modal-success">
+        <div class="modal-success-icon">🎉</div>
+        <div class="modal-success-title">Deal Submitted!</div>
+        <div class="modal-success-sub">${payload.customer} has been logged to the deals sheet.</div>
+        <div class="modal-actions" style="justify-content:center;margin-top:18px;">
+          <button class="modal-cancel" onclick="closeSubmitModal()">Close</button>
+        </div>
+      </div>`;
+    document.getElementById('submitStatus').innerHTML =
+      `<span style="color:var(--green);">✓ Last submitted: ${payload.customer} at ${new Date().toLocaleTimeString()}</span>`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Confirm & Submit';
+    document.getElementById('submitStatus').innerHTML =
+      `<span style="color:var(--red);">✗ Submission failed — check your network or SUBMIT_URL</span>`;
+  }
+}
 </script>
 </body>
 </html>
