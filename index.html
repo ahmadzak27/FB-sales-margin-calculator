@@ -1313,6 +1313,7 @@ function applyVolumesFromRows(rows, mode) {
   for (let i = headerRowIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     const rawName = (countryCol >= 0 ? r[countryCol] : '').trim();
+    if (i <= headerRowIdx + 3) console.log(`Row ${i} rawName='${rawName}' col${countryCol}='${r[countryCol]}' fullrow=`, r.slice(0,8));
     const match = countries.find(c =>
       c.name.toLowerCase().includes(rawName.toLowerCase()) ||
       rawName.toLowerCase().includes(c.name.split(' ')[0].toLowerCase())
