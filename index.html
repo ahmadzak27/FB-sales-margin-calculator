@@ -1254,7 +1254,22 @@ async function fetchSheetFromUrl() {
 
 // Shared row-matching logic used by both URL fetch and CSV upload
 function applyVolumesFromRows(rows, mode) {
-  const header = rows[0].map(h => h.toLowerCase());
+  // Scan first 5 rows to find the actual header row (handles merged/title rows above headers)
+  let headerRowIdx = 0;
+  let bestScore = -1;
+  for (let i = 0; i < Math.min(5, rows.length); i++) {
+    const r = rows[i].map(h => (h||'').toLowerCase());
+    let score = 0;
+    if (r.some(h => h.includes('country') || h.includes('market'))) score += 3;
+    if (r.some(h => h.includes('onboard') || h.includes('new hire') || h.includes('newhire'))) score += 2;
+    if (r.some(h => h.includes('leaver') || h.includes('offboard'))) score += 2;
+    if (r.some(h => h.includes('refresh'))) score += 2;
+    if (r.some(h => h.includes('intake'))) score += 2;
+    if (r.some(h => h.includes('itad'))) score += 2;
+    if (r.some(h => h.includes('full time') || h.includes('fte') || h.includes('employee'))) score += 1;
+    if (score > bestScore) { bestScore = score; headerRowIdx = i; }
+  }
+  const header = rows[headerRowIdx].map(h => (h||'').toLowerCase());
   const countryCol = header.findIndex(h => h.includes('country') || h.includes('market') || h.includes('name'));
   const cols = {
     onboards:  header.findIndex(h => h.includes('onboard') || h.includes('new hire') || h.includes('newhire') || h.includes('order')),
@@ -1264,13 +1279,12 @@ function applyVolumesFromRows(rows, mode) {
     intakes:   header.findIndex(h => h.includes('intake')),
     fte:       header.findIndex(h => h.includes('full time') || h.includes('fulltime') || h.includes('fte') || h.includes('employee')),
   };
-  // Debug: surface detected headers to status
-  const detectedCols = Object.entries(cols).map(([k,v]) => `${k}:${v>=0?rows[0][v]:'NOT FOUND'}`).join(' · ');
-  console.log('Sheet headers:', rows[0]);
+  const detectedCols = Object.entries(cols).map(([k,v]) => `${k}:${v>=0?rows[headerRowIdx][v]:'NOT FOUND'}`).join(' · ');
+  console.log('Header row index:', headerRowIdx, 'Headers:', rows[headerRowIdx]);
   console.log('Detected cols:', detectedCols);
   let matched = 0;
   const store = mode === 'land' ? landVolumes : expansionVolumes;
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = headerRowIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     const rawName = (countryCol >= 0 ? r[countryCol] : '').trim();
     const match = countries.find(c =>
