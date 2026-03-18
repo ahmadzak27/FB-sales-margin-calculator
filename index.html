@@ -1242,7 +1242,7 @@ async function fetchSheetFromUrl() {
     const matched = applyVolumesFromRows(rows, currentActTab);
     if (matched === 0) throw new Error('No country names matched — check column headers (Country, Onboards, Leavers, ITAD, Refreshes, Intakes)');
     status.style.color = 'var(--green)';
-    status.textContent = `✓ Loaded ${matched} countries from sheet`;
+    status.textContent = `✓ Loaded ${matched} countries · Columns: ${detectedCols}`;
     buildActionsTable(currentActTab);
     recalc();
   } catch(e) {
@@ -1257,12 +1257,17 @@ function applyVolumesFromRows(rows, mode) {
   const header = rows[0].map(h => h.toLowerCase());
   const countryCol = header.findIndex(h => h.includes('country') || h.includes('market') || h.includes('name'));
   const cols = {
-    onboards:  header.findIndex(h => h.includes('onboard') || h.includes('order')),
-    leavers:   header.findIndex(h => h.includes('leaver')  || h.includes('offboard') || h.includes('return')),
+    onboards:  header.findIndex(h => h.includes('onboard') || h.includes('new hire') || h.includes('newhire') || h.includes('order')),
+    leavers:   header.findIndex(h => h.includes('leaver') || h.includes('offboard') || h.includes('return')),
     itad:      header.findIndex(h => h.includes('itad')),
     refreshes: header.findIndex(h => h.includes('refresh')),
     intakes:   header.findIndex(h => h.includes('intake')),
+    fte:       header.findIndex(h => h.includes('full time') || h.includes('fulltime') || h.includes('fte') || h.includes('employee')),
   };
+  // Debug: surface detected headers to status
+  const detectedCols = Object.entries(cols).map(([k,v]) => `${k}:${v>=0?rows[0][v]:'NOT FOUND'}`).join(' · ');
+  console.log('Sheet headers:', rows[0]);
+  console.log('Detected cols:', detectedCols);
   let matched = 0;
   const store = mode === 'land' ? landVolumes : expansionVolumes;
   for (let i = 1; i < rows.length; i++) {
@@ -1273,13 +1278,14 @@ function applyVolumesFromRows(rows, mode) {
       rawName.toLowerCase().includes(c.name.split(' ')[0].toLowerCase())
     );
     if (!match) continue;
-    store[match.name] = [
-      cleanNum(cols.onboards  >= 0 ? r[cols.onboards]  : '0') || 0,
-      cleanNum(cols.leavers   >= 0 ? r[cols.leavers]   : '0') || 0,
-      cleanNum(cols.itad      >= 0 ? r[cols.itad]      : '0') || 0,
-      cleanNum(cols.refreshes >= 0 ? r[cols.refreshes] : '0') || 0,
-      cleanNum(cols.intakes   >= 0 ? r[cols.intakes]   : '0') || 0,
-    ];
+    // If we have an FTE col but no onboards col, use FTE ratios to estimate
+    const fteVal = cols.fte >= 0 ? (cleanNum(r[cols.fte]) || 0) : 0;
+    const onboards  = cols.onboards  >= 0 ? (cleanNum(r[cols.onboards])  || 0) : Math.round(fteVal * FTE_RATIOS.onboards);
+    const leavers   = cols.leavers   >= 0 ? (cleanNum(r[cols.leavers])   || 0) : Math.round(fteVal * FTE_RATIOS.leavers);
+    const itad      = cols.itad      >= 0 ? (cleanNum(r[cols.itad])      || 0) : Math.round(fteVal * FTE_RATIOS.itad);
+    const refreshes = cols.refreshes >= 0 ? (cleanNum(r[cols.refreshes]) || 0) : Math.round(fteVal * FTE_RATIOS.refreshes);
+    const intakes   = cols.intakes   >= 0 ? (cleanNum(r[cols.intakes])   || 0) : Math.round(fteVal * FTE_RATIOS.intakes);
+    store[match.name] = [onboards, leavers, itad, refreshes, intakes];
     matched++;
   }
   return matched;
