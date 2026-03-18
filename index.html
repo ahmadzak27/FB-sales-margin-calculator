@@ -953,26 +953,26 @@ function csvUrl(gid) {
 function parseCSV(text) {
   const rows = [];
   let cur = '', inQ = false, row = [];
-  // Normalize line endings
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
-      // Handle escaped quotes ""
       if (inQ && text[i+1] === '"') { cur += '"'; i++; }
       else inQ = !inQ;
     } else if (ch === ',' && !inQ) {
       row.push(cur.trim()); cur = '';
     } else if (ch === '\n' && !inQ) {
       row.push(cur.trim()); cur = '';
-      rows.push(row); row = [];
+      if (row.some(c => c !== '')) rows.push(row);
+      row = [];
+    } else if (ch === '\n' && inQ) {
+      cur += ' '; // replace in-cell newline with space
     } else {
-      // Replace in-cell newlines with a space
-      cur += (ch === '\n' && inQ) ? ' ' : ch;
+      cur += ch;
     }
   }
-  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
-  return rows.filter(r => r.some(c => c !== ''));
+  if (cur.trim() || row.length) { row.push(cur.trim()); if (row.some(c => c !== '')) rows.push(row); }
+  return rows;
 }
 
 function cleanNum(s) {
@@ -1315,11 +1315,12 @@ function applyVolumesFromRows(rows, mode) {
     if (!match) continue;
     // If we have an FTE col but no onboards col, use FTE ratios to estimate
     const fteVal = cols.fte >= 0 ? (cleanNum(r[cols.fte]) || 0) : 0;
-    const onboards  = cols.onboards  >= 0 ? (cleanNum(r[cols.onboards])  || 0) : Math.round(fteVal * FTE_RATIOS.onboards);
-    const leavers   = cols.leavers   >= 0 ? (cleanNum(r[cols.leavers])   || 0) : Math.round(fteVal * FTE_RATIOS.leavers);
-    const itad      = cols.itad      >= 0 ? (cleanNum(r[cols.itad])      || 0) : Math.round(fteVal * FTE_RATIOS.itad);
-    const refreshes = cols.refreshes >= 0 ? (cleanNum(r[cols.refreshes]) || 0) : Math.round(fteVal * FTE_RATIOS.refreshes);
-    const intakes   = cols.intakes   >= 0 ? (cleanNum(r[cols.intakes])   || 0) : Math.round(fteVal * FTE_RATIOS.intakes);
+    const hasRealCols = cols.onboards >= 0 || cols.leavers >= 0 || cols.refreshes >= 0 || cols.intakes >= 0;
+    const onboards  = cols.onboards  >= 0 ? (cleanNum(r[cols.onboards])  || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.onboards));
+    const leavers   = cols.leavers   >= 0 ? (cleanNum(r[cols.leavers])   || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.leavers));
+    const itad      = cols.itad      >= 0 ? (cleanNum(r[cols.itad])      || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.itad));
+    const refreshes = cols.refreshes >= 0 ? (cleanNum(r[cols.refreshes]) || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.refreshes));
+    const intakes   = cols.intakes   >= 0 ? (cleanNum(r[cols.intakes])   || 0) : (hasRealCols ? 0 : Math.round(fteVal * FTE_RATIOS.intakes));
     store[match.name] = [onboards, leavers, itad, refreshes, intakes];
     matched++;
   }
