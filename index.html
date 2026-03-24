@@ -1694,7 +1694,23 @@ function onStorageChange(inp) {
   const { country, dtype } = inp.dataset;
   if (!storageVolumes[country]) storageVolumes[country] = { laptops: 0, peripherals: 0, monitors: 0 };
   storageVolumes[country][dtype] = parseInt(inp.value) || 0;
-  buildStorageTable();
+  // Update just the annual cost cell for this row instead of rebuilding whole table
+  const row = inp.closest('tr');
+  if (row) {
+    const annual = getAnnualStorageCost(country);
+    const costCell = row.querySelector('td:last-child');
+    if (costCell) {
+      costCell.textContent = annual > 0 ? '$' + Math.round(annual).toLocaleString() + '/yr' : '—';
+      costCell.style.color = annual > 0 ? 'var(--orange)' : 'var(--text3)';
+    }
+    // Update total row
+    const totalCost = getTotalStorageCost();
+    const totalRow = document.querySelector('#storageBody tr:last-child td:last-child');
+    if (totalRow) {
+      totalRow.textContent = totalCost > 0 ? '$' + Math.round(totalCost).toLocaleString() + '/yr' : '—';
+      totalRow.style.color = totalCost > 0 ? 'var(--orange)' : 'var(--text3)';
+    }
+  }
   recalc();
 }
 
@@ -2282,7 +2298,7 @@ function openSubmitModal() {
     return;
   }
 
-  document.getElementById('modalSummary').innerHTML =
+  const summaryHTML =
     `Customer: <strong style="color:var(--text)">${cust}</strong><br>` +
     `AE: <strong style="color:var(--text)">${ae}</strong> &nbsp;·&nbsp; Version: <strong style="color:var(--text)">${ver}</strong><br>` +
     `Seats: <strong style="color:var(--text)">${parseInt(seats).toLocaleString()}</strong> &nbsp;·&nbsp; Tier: <strong style="color:var(--text)">${tier}</strong><br>` +
@@ -2293,17 +2309,16 @@ function openSubmitModal() {
     (getOverriddenFields().length > 0 ? `<br><span style="color:var(--orange);font-weight:600;">⚠ Prices overridden: ${getOverriddenFields().join(', ')}</span>` : '');
 
   document.getElementById('submitModal').classList.add('show');
-  document.getElementById('modalContent').innerHTML = document.getElementById('modalContent').innerHTML;
-  // Re-show form state (not success)
-  document.getElementById('modalContent').querySelector('.modal-title') && null;
-  showModalForm();
+  showModalForm(summaryHTML);
 }
 
-function showModalForm() {
+let _lastModalSummary = '';
+function showModalForm(summaryHTML) {
+  if (summaryHTML) _lastModalSummary = summaryHTML;
   document.getElementById('modalContent').innerHTML = `
     <div class="modal-title">Submit Deal</div>
     <div class="modal-sub">Review the details below before submitting. This will log a permanent record to the deals sheet.</div>
-    <div id="modalSummary" style="background:var(--surface2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.9;font-family:var(--mono);">${document.getElementById('modalSummary') ? document.getElementById('modalSummary').innerHTML : ''}</div>
+    <div id="modalSummary" style="background:var(--surface2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.9;font-family:var(--mono);">${_lastModalSummary}</div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeSubmitModal()">Cancel</button>
       <button class="modal-confirm" id="modalConfirmBtn" onclick="submitDeal()">Confirm &amp; Submit</button>
@@ -2312,6 +2327,15 @@ function showModalForm() {
 
 function closeSubmitModal() {
   document.getElementById('submitModal').classList.remove('show');
+  // Reset modal content so it's fresh for next open
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-title">Submit Deal</div>
+    <div class="modal-sub">Review the details below before submitting.</div>
+    <div id="modalSummary" style="background:var(--surface2);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.9;font-family:var(--mono);"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeSubmitModal()">Cancel</button>
+      <button class="modal-confirm" id="modalConfirmBtn" onclick="submitDeal()">Confirm &amp; Submit</button>
+    </div>`;
 }
 
 async function submitDeal() {
