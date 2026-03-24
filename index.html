@@ -1026,6 +1026,21 @@
       </tbody>
     </table>
   </div>
+
+  <!-- SUBMIT ENDPOINT -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Submit Endpoint (Apps Script URL)</div>
+        <div class="settings-section-sub">Paste your deployed Google Apps Script web app URL here — no code editing needed</div>
+      </div>
+      <button class="btn" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 12px;" onclick="testSubmitUrl()">⚡ Test</button>
+    </div>
+    <div style="padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="submitUrlInput" placeholder="https://script.google.com/macros/s/..." style="flex:1;min-width:300px;font-size:12px;font-family:var(--mono);" oninput="saveSubmitUrl()">
+      <span id="submitUrlStatus" style="font-family:var(--mono);font-size:11px;"></span>
+    </div>
+  </div>
 </div>
 
 <div id="pdf-summary"></div>
@@ -1759,6 +1774,23 @@ function saveFxRates() {
   updateFxExamples();
   recalc();
 }
+function saveSubmitUrl() {
+  const val = document.getElementById('submitUrlInput').value.trim();
+  SUBMIT_URL = val;
+  const status = document.getElementById('submitUrlStatus');
+  status.textContent = val ? '✓ Saved' : '';
+  status.style.color = 'var(--green)';
+}
+function testSubmitUrl() {
+  const status = document.getElementById('submitUrlStatus');
+  if (!SUBMIT_URL) { status.textContent = '✗ No URL set'; status.style.color='var(--red)'; return; }
+  status.textContent = '⏳ Testing…'; status.style.color='var(--text3)';
+  fetch(SUBMIT_URL)
+    .then(r => r.json())
+    .then(d => { status.textContent = d.status==='ok' ? '✓ Connected' : '✗ ' + d.message; status.style.color = d.status==='ok'?'var(--green)':'var(--red)'; })
+    .catch(() => { status.textContent = '✗ Could not reach endpoint'; status.style.color='var(--red)'; });
+}
+
 function resetFxRates() {
   FX_RATES = { GBP: 1.27, EUR: 1.08, CAD: 0.74, USD: 1.00 };
   document.getElementById('fxGBP').value = '1.27';
@@ -1858,6 +1890,8 @@ function renderSettingsTables() {
   updateFteExamples();
   updateFxExamples();
   renderStorageRatesTable();
+  const urlInput = document.getElementById('submitUrlInput');
+  if (urlInput) urlInput.value = SUBMIT_URL || '';
 }
 
 // ============================================================
@@ -2272,7 +2306,7 @@ window.addEventListener('DOMContentLoaded', ()=>{ reloadData(); });
 // SUBMIT DEAL
 // ============================================================
 // Paste your deployed Apps Script URL here after setup:
-const SUBMIT_URL = 'https://script.google.com/a/macros/firstbase.com/s/AKfycbw-ktTBxijw43DNKlUZiUck2zLEbk5LY1DYBhJJ6uo2UVB4JGophF8zhkpQLw0CBr45RA/exec';
+let SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbw-ktTBxijw43DNKlUZiUck2zLEbk5LY1DYBhJJ6uo2UVB4JGophF8zhkpQLw0CBr45RA/exec';
 
 function openSubmitModal() {
   const cust   = document.getElementById('customerName').value.trim() || '—';
