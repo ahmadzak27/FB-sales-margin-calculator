@@ -452,6 +452,17 @@
   .modal-success-icon { font-size: 40px; margin-bottom: 10px; }
   .modal-success-title { font-family: var(--display); font-size: 18px; font-weight: 800; color: var(--green); margin-bottom: 6px; }
   .modal-success-sub { font-size: 13px; color: var(--text2); }
+
+  /* PRICE EDIT MODE */
+  .price-override-input {
+    width: 72px; padding: 4px 6px; font-size: 11px; text-align: center;
+    border-radius: 6px; border: 1px solid var(--yellow); background: var(--yellow-dim);
+    font-family: var(--mono); color: var(--text); outline: none;
+    transition: border-color 0.15s;
+  }
+  .price-override-input:focus { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(212,143,0,0.15); }
+  .price-override-input.edited { background: #fff8e6; border-color: var(--orange); }
+  .price-edit-active #editPricesBtn { background: var(--yellow-dim) !important; border-color: var(--yellow) !important; color: var(--yellow) !important; }
 </style>
 </head>
 <body>
@@ -756,6 +767,8 @@
     </div>
     <div class="actions-toolbar-right">
       <button class="btn btn-ghost" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="clearActTab()">✕ Clear All</button>
+      <button class="btn btn-ghost" id="editPricesBtn" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="togglePriceEdit()">✎ Edit Prices</button>
+      <button class="btn btn-ghost" id="editPricesBtn" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="togglePriceEdit()">✎ Edit Prices</button>
       <label class="btn btn-primary" style="cursor:pointer;">
         ⬆ Upload Google Sheet CSV
         <input type="file" id="csvUpload" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
@@ -859,6 +872,40 @@
     </div>
   </div>
 
+  <!-- FX RATES -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">FX Rates — Local Currency → USD</div>
+        <div class="settings-section-sub">Applied to GBP, EUR and CAD action prices &amp; costs when calculating ARR. Update these to reflect current exchange rates.</div>
+      </div>
+      <button class="btn" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 12px;" onclick="resetFxRates()">↺ Reset to Defaults</button>
+    </div>
+    <table class="settings-table">
+      <thead><tr><th>Currency</th><th>Countries Affected</th><th style="text-align:right;">Rate (1 local = X USD)</th><th style="text-align:right;">Example: 100 local →</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>GBP</strong></td>
+          <td style="color:var(--text3);font-size:11px;">U.K.</td>
+          <td style="text-align:right;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><input type="number" id="fxGBP" min="0" step="0.01" value="1.27" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;" oninput="saveFxRates()"><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">USD</span></div></td>
+          <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text2);" id="fxExGBP">$127.00</td>
+        </tr>
+        <tr>
+          <td><strong>EUR</strong></td>
+          <td style="color:var(--text3);font-size:11px;">E.U.</td>
+          <td style="text-align:right;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><input type="number" id="fxEUR" min="0" step="0.01" value="1.08" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;" oninput="saveFxRates()"><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">USD</span></div></td>
+          <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text2);" id="fxExEUR">$108.00</td>
+        </tr>
+        <tr>
+          <td><strong>CAD</strong></td>
+          <td style="color:var(--text3);font-size:11px;">Canada</td>
+          <td style="text-align:right;"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;"><input type="number" id="fxCAD" min="0" step="0.01" value="0.74" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;" oninput="saveFxRates()"><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">USD</span></div></td>
+          <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text2);" id="fxExCAD">$74.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- FTE HELPER RATIOS -->
   <div class="settings-section">
     <div class="settings-section-header">
@@ -936,6 +983,7 @@ let tiers = [...FALLBACK_TIERS];
 let actionDiscounts = [...FALLBACK_ACTION_DISCOUNTS];
 let countries = JSON.parse(JSON.stringify(FALLBACK_COUNTRIES));
 let FTE_RATIOS = { onboards: 0.20, leavers: 0.15, itad: 0.05, refreshes: 0.10, intakes: 0.05 };
+let FX_RATES = { GBP: 1.27, EUR: 1.08, CAD: 0.74, USD: 1.00 };
 let landVolumes = {};
 let expansionVolumes = {};
 let currentActTab = 'land';
@@ -1068,8 +1116,8 @@ function setSyncState(s,l) {
 // ============================================================
 function initVolumes() {
   countries.forEach(c => {
-    if(!landVolumes[c.name]) landVolumes[c.name]=[0,0,0,0,0];
-    if(!expansionVolumes[c.name]) expansionVolumes[c.name]=[0,0,0,0,0];
+    if(!landVolumes[c.name]) landVolumes[c.name]=[0,0,0,0,0,0,0,0];
+    if(!expansionVolumes[c.name]) expansionVolumes[c.name]=[0,0,0,0,0,0,0,0];
   });
 }
 
@@ -1079,7 +1127,7 @@ function buildActionsTable(mode) {
   const container = document.getElementById(containerId);
   const label = mode==='land' ? 'Land Deal' : 'Expansion';
 
-  let totalVols = [0,0,0,0,0];
+  let totalVols = [0,0,0,0,0,0,0,0];
 
   let html = `
     <div class="actions-grid-title">${label} Action Volumes
@@ -1095,6 +1143,9 @@ function buildActionsTable(mode) {
           <th class="action-col">ITAD <span class="tip-icon" data-tip-title="ITAD" data-tip="IT Asset Disposal — secure wiping and recycling of retired devices. Separate pricing from standard returns." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="action-col">Refreshes <span class="tip-icon" data-tip-title="Refreshes" data-tip="Device refresh cycles — retrieving old equipment and sending new. Uses the standard Order price per unit." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="action-col">Intakes <span class="tip-icon" data-tip-title="Intakes" data-tip="Receiving and warehousing equipment sent in by the customer. Priced at the Intake rate per unit." style="vertical-align:middle;margin-left:4px;">?</span></th>
+          <th class="action-col" style="background:rgba(244,110,115,0.08);">Expedited <span class="tip-icon" data-tip-title="Expedited Orders" data-tip="Standard expedited shipping for onboard orders. Priced at the Standard Expedited Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
+          <th class="action-col" style="background:rgba(244,110,115,0.08);">Overnight <span class="tip-icon" data-tip-title="Overnight Orders" data-tip="Overnight shipping for urgent onboard orders. Priced at the Overnight Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
+          <th class="action-col" style="background:rgba(244,110,115,0.08);">Lightweight <span class="tip-icon" data-tip-title="Lightweight Orders" data-tip="Lightweight order shipping. Priced at the Lightweight Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="fte-col">FTE Helper <span class="tip-icon" data-tip-title="FTE Helper" data-tip="Enter total headcount for this country and we auto-estimate action volumes using the ratios set in Settings. Adjust individual fields after if needed." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="action-col" style="text-align:right;padding-right:14px;">Actions Total</th>
         </tr>
@@ -1102,19 +1153,33 @@ function buildActionsTable(mode) {
       <tbody>`;
 
   countries.forEach(c => {
-    const vols = volStore[c.name] || [0,0,0,0,0];
+    const vols = volStore[c.name] || [0,0,0,0,0,0,0,0];
     if (c.name.includes('U.S.')) console.log('buildActionsTable U.S. vols:', vols, 'from store:', volStore[c.name]);
     const rowTotal = vols.reduce((a,b)=>a+b,0);
     vols.forEach((v,i)=>totalVols[i]+=v);
     const tc = c.tier===1?'t1':c.tier===2?'t2':'t3';
     const tierLabel = c.tier===1?'T1':c.tier===2?'T2':'T3';
+    const priceLabels = ['Order','Exp','Night','Light','Return','ITAD','Repl','Intake'];
+    const priceIdxMap = [0,1,2,3,4,5,6,7];
     html += `<tr data-country="${c.name}" data-mode="${mode}">
       <td class="country-cell"><span class="tier-dot ${tc}"></span>${c.name} <span style="font-size:10px;color:var(--text3);font-family:var(--mono);">${tierLabel}</span></td>`;
-    for(let v=0;v<5;v++) {
+    for(let v=0;v<8;v++) {
       html += `<td style="text-align:center;"><input type="number" min="0" value="${vols[v]||0}" data-country="${c.name}" data-volidx="${v}" data-mode="${mode}" oninput="onActVolumeChange(this)"></td>`;
     }
     html += `<td class="fte-cell" style="text-align:center;"><input type="number" min="0" placeholder="FTE" data-country="${c.name}" data-mode="${mode}" title="Auto-fill: 20% Onboards, 15% Leavers, 5% ITAD, 10% Refreshes, 5% Intakes" oninput="onFteChange(this)"></td>`;
     html += `<td class="row-total">${rowTotal>0?rowTotal.toLocaleString():'—'}</td></tr>`;
+    if (priceEditMode) {
+      const sym = {GBP:'£',EUR:'€',CAD:'CA$',USD:'$'}[c.currency]||'$';
+      html += `<tr style="background:var(--yellow-dim);"><td style="font-size:10px;color:var(--yellow);font-family:var(--mono);padding:4px 14px;">PRICES (${c.currency})</td>`;
+      for(let p=0;p<8;p++) {
+        const orig = c.prices[priceIdxMap[p]];
+        const ov = priceOverrides[c.name] && priceOverrides[c.name][p] != null ? priceOverrides[c.name][p] : null;
+        const val = ov != null ? ov : (orig || '');
+        const edited = ov != null ? ' edited' : '';
+        html += `<td style="text-align:center;padding:3px;"><input type="number" class="price-override-input${edited}" data-country="${c.name}" data-pidx="${p}" value="${val}" placeholder="${orig||'—'}" oninput="onPriceOverride(this)" style="width:72px;"></td>`;
+      }
+      html += `<td></td><td></td></tr>`;
+    }
   });
 
   const grandTotal = totalVols.reduce((a,b)=>a+b,0);
@@ -1125,6 +1190,9 @@ function buildActionsTable(mode) {
     <td style="text-align:center;font-family:var(--mono);">${totalVols[2]||'—'}</td>
     <td style="text-align:center;font-family:var(--mono);">${totalVols[3]||'—'}</td>
     <td style="text-align:center;font-family:var(--mono);">${totalVols[4]||'—'}</td>
+    <td style="text-align:center;font-family:var(--mono);">${totalVols[5]||'—'}</td>
+    <td style="text-align:center;font-family:var(--mono);">${totalVols[6]||'—'}</td>
+    <td style="text-align:center;font-family:var(--mono);">${totalVols[7]||'—'}</td>
     <td></td>
     <td class="row-total">${grandTotal>0?grandTotal.toLocaleString():'—'}</td>
   </tr>`;
@@ -1136,7 +1204,7 @@ function onActVolumeChange(inp) {
   const { country, volidx, mode } = inp.dataset;
   const val = parseInt(inp.value)||0;
   const store = mode==='land' ? landVolumes : expansionVolumes;
-  if(!store[country]) store[country]=[0,0,0,0,0];
+  if(!store[country]) store[country]=[0,0,0,0,0,0,0,0];
   store[country][parseInt(volidx)]=val;
   // Update row total inline
   const tr = inp.closest('tr');
@@ -1154,8 +1222,8 @@ function onFteChange(inp) {
   const store = mode==='land' ? landVolumes : expansionVolumes;
   const vols = fte>0 ? [
     Math.round(fte*FTE_RATIOS.onboards), Math.round(fte*FTE_RATIOS.leavers), Math.round(fte*FTE_RATIOS.itad),
-    Math.round(fte*FTE_RATIOS.refreshes), Math.round(fte*FTE_RATIOS.intakes)
-  ] : [0,0,0,0,0];
+    Math.round(fte*FTE_RATIOS.refreshes), Math.round(fte*FTE_RATIOS.intakes), 0, 0, 0
+  ] : [0,0,0,0,0,0,0,0];
   store[country] = vols;
   // Update the row inputs without full rebuild
   const tr = inp.closest('tr');
@@ -1170,17 +1238,17 @@ function onFteChange(inp) {
 function updateSummaryRow(mode) {
   const containerId = mode==='land'?'actLandTable':'actExpTable';
   const volStore = mode==='land'?landVolumes:expansionVolumes;
-  const totals=[0,0,0,0,0];
+  const totals=[0,0,0,0,0,0,0,0];
   countries.forEach(c=>{
-    const v=volStore[c.name]||[0,0,0,0,0];
+    const v=volStore[c.name]||[0,0,0,0,0,0,0,0];
     v.forEach((x,i)=>totals[i]+=x);
   });
   const grand=totals.reduce((a,b)=>a+b,0);
   const sumRow = document.querySelector(`#${containerId} .summary-row`);
   if(!sumRow) return;
   const tds=sumRow.querySelectorAll('td');
-  for(let i=0;i<5;i++) tds[i+1].textContent=totals[i]||'—';
-  tds[7].textContent=grand>0?grand.toLocaleString():'—';
+  for(let i=0;i<8;i++) tds[i+1].textContent=totals[i]||'—';
+  tds[10].textContent=grand>0?grand.toLocaleString():'—';
 }
 
 function switchActTab(mode, btn) {
@@ -1191,9 +1259,65 @@ function switchActTab(mode, btn) {
   if(btn) btn.classList.add('active');
 }
 
+// ============================================================
+// PRICE EDIT MODE
+// ============================================================
+let priceEditMode = false;
+let priceOverrides = {}; // { 'U.S. (USD)': [null,null,null,null,null,null,null,null] }
+
+function togglePriceEdit() {
+  priceEditMode = !priceEditMode;
+  const btn = document.getElementById('editPricesBtn');
+  if (priceEditMode) {
+    btn.textContent = '✓ Done Editing';
+    btn.style.background = 'var(--yellow-dim)';
+    btn.style.borderColor = 'var(--yellow)';
+    btn.style.color = 'var(--yellow)';
+    document.querySelector('.actions-page') && document.querySelector('.actions-page').classList.add('price-edit-active');
+  } else {
+    btn.textContent = '✎ Edit Prices';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    document.querySelector('.actions-page') && document.querySelector('.actions-page').classList.remove('price-edit-active');
+  }
+  buildActionsTable(currentActTab);
+}
+
+function getEffectivePrice(countryName, idx) {
+  if (priceOverrides[countryName] && priceOverrides[countryName][idx] != null) {
+    return priceOverrides[countryName][idx];
+  }
+  const c = countries.find(x => x.name === countryName);
+  return c ? (c.prices[idx] || 0) : 0;
+}
+
+function onPriceOverride(inp) {
+  const country = inp.dataset.country;
+  const idx = parseInt(inp.dataset.pidx);
+  const val = parseFloat(inp.value);
+  if (!priceOverrides[country]) priceOverrides[country] = new Array(8).fill(null);
+  const c = countries.find(x => x.name === country);
+  const orig = c ? (c.prices[idx] || 0) : 0;
+  priceOverrides[country][idx] = (!isNaN(val) && val !== orig) ? val : null;
+  inp.classList.toggle('edited', priceOverrides[country][idx] !== null);
+  recalc();
+}
+
+function getOverriddenFields() {
+  const fields = [];
+  Object.entries(priceOverrides).forEach(([country, overrides]) => {
+    const labels = ['Order','Expedited','Overnight','Lightweight','Return','ITAD','Replacement','Intake'];
+    overrides.forEach((v, i) => {
+      if (v !== null) fields.push(`${country} ${labels[i]}: $${v}`);
+    });
+  });
+  return fields;
+}
+
 function clearActTab() {
   const store = currentActTab==='land'?landVolumes:expansionVolumes;
-  countries.forEach(c=>{ store[c.name]=[0,0,0,0,0]; });
+  countries.forEach(c=>{ store[c.name]=[0,0,0,0,0,0,0,0]; });
   buildActionsTable(currentActTab);
   recalc();
 }
@@ -1309,12 +1433,15 @@ function applyVolumesFromRows(rows, mode) {
   const header = rows[headerRowIdx].map(h => (h||'').toLowerCase());
   const countryCol = header.findIndex(h => h.includes('country') || h.includes('market') || h.includes('name'));
   const cols = {
-    onboards:  header.findIndex(h => h.includes('onboard') || h.includes('new hire') || h.includes('newhire') || h.includes('order')),
-    leavers:   header.findIndex(h => h.includes('leaver') || h.includes('offboard') || h.includes('return')),
-    itad:      header.findIndex(h => h.includes('itad')),
-    refreshes: header.findIndex(h => h.includes('refresh')),
-    intakes:   header.findIndex(h => h.includes('intake')),
-    fte:       header.findIndex(h => h.includes('full time') || h.includes('fulltime') || h.includes('fte') || h.includes('employee')),
+    onboards:   header.findIndex(h => h.includes('onboard') || h.includes('new hire') || h.includes('newhire')),
+    leavers:    header.findIndex(h => h.includes('leaver') || h.includes('offboard') || h.includes('return')),
+    itad:       header.findIndex(h => h.includes('itad')),
+    refreshes:  header.findIndex(h => h.includes('refresh')),
+    intakes:    header.findIndex(h => h.includes('intake')),
+    expedited:  header.findIndex(h => h.includes('expedited') || h.includes('expedite')),
+    overnight:  header.findIndex(h => h.includes('overnight')),
+    lightweight:header.findIndex(h => h.includes('lightweight') || h.includes('light weight')),
+    fte:        header.findIndex(h => h.includes('full time') || h.includes('fulltime') || h.includes('fte') || h.includes('employee')),
   };
   const detectedCols = Object.entries(cols).map(([k,v]) => `${k}:${v>=0?rows[headerRowIdx][v]:'NOT FOUND'}`).join(' · ');
   console.log('Header row index:', headerRowIdx, 'Headers:', rows[headerRowIdx]);
@@ -1347,11 +1474,14 @@ function applyVolumesFromRows(rows, mode) {
       if (fteVal === 0) continue;
     }
     // Don't overwrite a good record with zeros — only write if this row has more data
-    const existing = store[match.name] || [0,0,0,0,0];
+    const existing = store[match.name] || [0,0,0,0,0,0,0,0];
     const existingSum = existing.reduce((a,b)=>a+b,0);
     const newSum = onboards + leavers + itad + refreshes + intakes;
     if (existingSum > 0 && newSum === 0) continue; // skip zero overwrites
-    store[match.name] = [onboards, leavers, itad, refreshes, intakes];
+    const expedited  = cols.expedited  >= 0 ? (cleanNum(r[cols.expedited])  || 0) : 0;
+    const overnight  = cols.overnight  >= 0 ? (cleanNum(r[cols.overnight])  || 0) : 0;
+    const lightweight= cols.lightweight>= 0 ? (cleanNum(r[cols.lightweight])|| 0) : 0;
+    store[match.name] = [onboards, leavers, itad, refreshes, intakes, expedited, overnight, lightweight];
     if (match.name.includes('U.S.')) console.log('Wrote U.S.:', store[match.name], 'from row', r.slice(0,8));
     matched++;
   }
@@ -1380,6 +1510,28 @@ function handleCSVUpload(event) {
 // ============================================================
 // SETTINGS TABLES
 // ============================================================
+function saveFxRates() {
+  FX_RATES.GBP = parseFloat(document.getElementById('fxGBP').value) || 1.27;
+  FX_RATES.EUR = parseFloat(document.getElementById('fxEUR').value) || 1.08;
+  FX_RATES.CAD = parseFloat(document.getElementById('fxCAD').value) || 0.74;
+  updateFxExamples();
+  recalc();
+}
+function resetFxRates() {
+  FX_RATES = { GBP: 1.27, EUR: 1.08, CAD: 0.74, USD: 1.00 };
+  document.getElementById('fxGBP').value = '1.27';
+  document.getElementById('fxEUR').value = '1.08';
+  document.getElementById('fxCAD').value = '0.74';
+  updateFxExamples();
+  recalc();
+}
+function updateFxExamples() {
+  const el = (id, rate) => { const e = document.getElementById(id); if(e) e.textContent = '$' + (100 * rate).toFixed(2); };
+  el('fxExGBP', FX_RATES.GBP);
+  el('fxExEUR', FX_RATES.EUR);
+  el('fxExCAD', FX_RATES.CAD);
+}
+
 function saveFteRatios() {
   FTE_RATIOS.onboards  = (parseFloat(document.getElementById('fteOnboards').value)  || 0) / 100;
   FTE_RATIOS.leavers   = (parseFloat(document.getElementById('fteLeavers').value)   || 0) / 100;
@@ -1432,12 +1584,17 @@ function renderSettingsTables() {
 
   // PRICES
   let pb='';
+  const symMap2 = {GBP:'£', EUR:'€', CAD:'CA$', USD:'$'};
   countries.forEach(c=>{
     const tc=c.tier===1?'tier1-row':'tier2-row';
     const basis = document.getElementById('refreshBasis') ? document.getElementById('refreshBasis').value : 'return';
     const refreshP = basis === 'itad' ? (c.prices[0]||0)+(c.prices[5]||0) : (c.prices[6]||0);
-    const refreshC = basis === 'itad' ? (c.costs[0]||0)+(c.costs[5]||0)   : (c.costs[6]||0);
-    pb+=`<tr class="${tc}"><td>${c.name}</td><td>${fmt(c.prices[0])}</td><td>${refreshP?fmt(refreshP):'<span class="null-cell">—</span>'}</td><td>${fmt(c.prices[4])}</td><td>${fmt(c.prices[5])}</td><td>${fmt(c.prices[7])}</td><td>${c.prices[1]?fmt(c.prices[1]):'<span class="null-cell">—</span>'}</td></tr>`;
+    const sym = symMap2[c.currency] || '$';
+    const fxRate = FX_RATES[c.currency] || 1;
+    const isNonUSD = c.currency !== 'USD';
+    const fxNote = isNonUSD ? `<span style="font-family:var(--mono);font-size:9px;background:rgba(107,140,218,0.12);color:#6b8cda;border-radius:4px;padding:1px 5px;margin-left:4px;">${c.currency} ×${fxRate}</span>` : '';
+    const fmtL = n => n != null ? `${sym}${n.toLocaleString()}` : '—';
+    pb+=`<tr class="${tc}"><td>${c.name}${fxNote}</td><td>${fmtL(c.prices[0])}</td><td>${refreshP?fmtL(refreshP):'<span class="null-cell">—</span>'}</td><td>${fmtL(c.prices[4])}</td><td>${fmtL(c.prices[5])}</td><td>${fmtL(c.prices[7])}</td><td>${c.prices[1]?fmtL(c.prices[1]):'<span class="null-cell">—</span>'}</td></tr>`;
   });
   document.getElementById('pricesBody').innerHTML=pb;
 
@@ -1445,15 +1602,19 @@ function renderSettingsTables() {
   let cb='';
   countries.forEach(c=>{
     const tc=c.tier===1?'tier1-row':'tier2-row';
+    const sym = symMap2[c.currency] || '$';
+    const fmtC = n => n != null ? `${sym}${n.toLocaleString()}` : '—';
+    // GM% uses price*fx vs cost*fx — fx cancels so ratio is the same; compute directly
     const oGM=pct(c.prices[0],c.costs[0]); const rGM=pct(c.prices[4],c.costs[4]); const iGM=pct(c.prices[5],c.costs[5]);
     cb+=`<tr class="${tc}"><td>${c.name}</td>
-      <td>${fmt(c.costs[0])}</td><td><span class="margin-badge ${gmClass(oGM)}">${oGM}</span></td>
-      <td>${fmt(c.costs[4])}</td><td><span class="margin-badge ${gmClass(rGM)}">${rGM}</span></td>
-      <td>${fmt(c.costs[5])}</td><td><span class="margin-badge ${gmClass(iGM)}">${iGM}</span></td>
+      <td>${fmtC(c.costs[0])}</td><td><span class="margin-badge ${gmClass(oGM)}">${oGM}</span></td>
+      <td>${fmtC(c.costs[4])}</td><td><span class="margin-badge ${gmClass(rGM)}">${rGM}</span></td>
+      <td>${fmtC(c.costs[5])}</td><td><span class="margin-badge ${gmClass(iGM)}">${iGM}</span></td>
     </tr>`;
   });
   document.getElementById('costsBody').innerHTML=cb;
   updateFteExamples();
+  updateFxExamples();
 }
 
 // ============================================================
@@ -1475,14 +1636,18 @@ function lookupDiscount(grossArr) {
 function calcActions(volStore) {
   let grossRev=0, cost=0; const breakdown=[];
   countries.forEach(c=>{
-    const v=volStore[c.name]||[0,0,0,0,0];
+    const v=volStore[c.name]||[0,0,0,0,0,0,0,0];
     const p=c.prices, co=c.costs;
+    const fx = FX_RATES[c.currency] || 1.00;
+    // Apply price overrides if set
+    const gp = (idx) => (priceOverrides[c.name] && priceOverrides[c.name][idx] != null) ? priceOverrides[c.name][idx] : (p[idx]||0);
     const refreshBasis = document.getElementById('refreshBasis') ? document.getElementById('refreshBasis').value : 'return';
-    const refreshPrice = refreshBasis === 'itad' ? (p[0]||0)+(p[5]||0) : (p[6]||0);
-    const refreshCost  = refreshBasis === 'itad' ? (co[0]||0)+(co[5]||0) : (co[6]||0);
-    const rev = (p[0]||0)*v[0]+(p[4]||0)*v[1]+(p[5]||0)*v[2]+refreshPrice*v[3]+(p[7]||0)*v[4];
-    const cst = (co[0]||0)*v[0]+(co[4]||0)*v[1]+(co[5]||0)*v[2]+refreshCost*v[3]+(co[7]||0)*v[4];
-    if(rev>0||v.some(x=>x>0)) breakdown.push({name:c.name,vols:v,rev,cost:cst,margin:rev>0?(rev-cst)/rev:0});
+    const refreshPrice = refreshBasis === 'itad' ? (gp(0)+gp(5))*fx : gp(6)*fx;
+    const refreshCost  = refreshBasis === 'itad' ? ((co[0]||0)+(co[5]||0))*fx : (co[6]||0)*fx;
+    const revLocal = gp(0)*v[0]+gp(4)*v[1]+gp(5)*v[2]+(refreshBasis==='itad'?gp(0)+gp(5):gp(6))*v[3]+gp(7)*v[4]+gp(1)*v[5]+gp(2)*v[6]+gp(3)*v[7];
+    const rev = gp(0)*fx*v[0]+gp(4)*fx*v[1]+gp(5)*fx*v[2]+refreshPrice*v[3]+gp(7)*fx*v[4]+gp(1)*fx*v[5]+gp(2)*fx*v[6]+gp(3)*fx*v[7];
+    const cst = (co[0]||0)*fx*v[0]+(co[4]||0)*fx*v[1]+(co[5]||0)*fx*v[2]+refreshCost*v[3]+(co[7]||0)*fx*v[4]+(co[1]||0)*fx*v[5]+(co[2]||0)*fx*v[6]+(co[3]||0)*fx*v[7];
+    if(rev>0||v.some(x=>x>0)) breakdown.push({name:c.name,vols:v,rev,cost:cst,margin:rev>0?(rev-cst)/rev:0,currency:c.currency,fx,revLocal});
     grossRev+=rev; cost+=cst;
   });
   return {grossRev,cost,breakdown};
@@ -1604,19 +1769,27 @@ function recalc() {
 function renderBreakdown(breakdown, disc) {
   const tbody=document.getElementById('breakdownBody');
   if(breakdown.length===0){
-    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px;">No action volumes entered — go to the <strong>Actions</strong> tab to add volumes</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px;">No action volumes entered — go to the <strong>Actions</strong> tab to add volumes</td></tr>`;
     return;
   }
+  const symMap = {GBP:'£', EUR:'€', CAD:'CA$', USD:'$'};
   let tRev=0,tCost=0,html='';
   breakdown.forEach(b=>{
     const net=b.rev*(1-disc); tRev+=net; tCost+=b.cost;
     const m=net>0?(net-b.cost)/net:0, mp=(m*100).toFixed(1)+'%';
     const mc=m>=0.40?'margin-high':m>=0.25?'margin-mid':'margin-low';
-    html+=`<tr><td>${b.name}</td><td>${b.vols[0]||0}</td><td>${b.vols[1]||0}</td><td>${b.vols[2]||0}</td><td>${b.vols[3]||0}</td><td>${b.vols[4]||0}</td><td>$${Math.round(net).toLocaleString()}</td><td>$${Math.round(b.cost).toLocaleString()}</td><td><span class="margin-pill ${mc}">${mp}</span></td></tr>`;
+    const isNonUSD = b.currency && b.currency !== 'USD';
+    const sym = symMap[b.currency] || '$';
+    const localNet = b.revLocal ? b.revLocal*(1-disc) : null;
+    const revCell = isNonUSD
+      ? `<div style="font-family:var(--mono);font-size:12px;">$${Math.round(net).toLocaleString()}</div><div style="font-size:10px;color:var(--text3);">${sym}${Math.round(localNet).toLocaleString()} @ ${b.fx}</div>`
+      : `$${Math.round(net).toLocaleString()}`;
+    const fxBadge = isNonUSD ? `<span style="font-family:var(--mono);font-size:9px;background:rgba(107,140,218,0.12);color:#6b8cda;border-radius:4px;padding:1px 5px;margin-left:4px;">${b.currency}</span>` : '';
+    html+=`<tr><td>${b.name}${fxBadge}</td><td>${b.vols[0]||0}</td><td>${b.vols[1]||0}</td><td>${b.vols[2]||0}</td><td>${b.vols[3]||0}</td><td>${b.vols[4]||0}</td><td>${b.vols[5]||0}</td><td>${b.vols[6]||0}</td><td>${b.vols[7]||0}</td><td>${revCell}</td><td>$${Math.round(b.cost).toLocaleString()}</td><td><span class="margin-pill ${mc}">${mp}</span></td></tr>`;
   });
   const tm=tRev>0?(tRev-tCost)/tRev:0, tmp=(tm*100).toFixed(1)+'%';
   const tmc=tm>=0.40?'margin-high':tm>=0.25?'margin-mid':'margin-low';
-  html+=`<tr class="total-row"><td>Total</td><td></td><td></td><td></td><td></td><td></td><td>$${Math.round(tRev).toLocaleString()}</td><td>$${Math.round(tCost).toLocaleString()}</td><td><span class="margin-pill ${tmc}">${tmp}</span></td></tr>`;
+  html+=`<tr class="total-row"><td>Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>$${Math.round(tRev).toLocaleString()}</td><td>$${Math.round(tCost).toLocaleString()}</td><td><span class="margin-pill ${tmc}">${tmp}</span></td></tr>`;
   tbody.innerHTML=html;
 }
 
@@ -1870,7 +2043,8 @@ function openSubmitModal() {
     `Sales Discount: <strong style="color:var(--text)">${sDisc}%</strong> &nbsp;·&nbsp; One-Time: <strong style="color:var(--text)">$${parseFloat(otDisc).toLocaleString()}</strong> &nbsp;·&nbsp; Action Discount: <strong style="color:var(--text)">${actD}</strong><br>` +
     `Land ARR: <strong style="color:var(--text)">${s1Tot}</strong> &nbsp;·&nbsp; Land GM: <strong style="color:var(--text)">${s1GM}</strong><br>` +
     `Land+Exp ARR: <strong style="color:var(--text)">${s2Tot}</strong> &nbsp;·&nbsp; Land+Exp GM: <strong style="color:var(--text)">${s2GM}</strong><br>` +
-    `Status: <strong style="color:var(--text)">${status}</strong>`;
+    `Status: <strong style="color:var(--text)">${status}</strong>` +
+    (getOverriddenFields().length > 0 ? `<br><span style="color:var(--orange);font-weight:600;">⚠ Prices overridden: ${getOverriddenFields().join(', ')}</span>` : '');
 
   document.getElementById('submitModal').classList.add('show');
   document.getElementById('modalContent').innerHTML = document.getElementById('modalContent').innerHTML;
@@ -1923,6 +2097,7 @@ async function submitDeal() {
     landExpGM:      document.getElementById('s2GM').textContent,
     actionDiscount: document.getElementById('actionDiscountVal').textContent + (document.getElementById('overrideActDisc').value==='yes' ? ' (override)' : ''),
     refreshBasis:   document.getElementById('refreshBasis').value === 'itad' ? 'Order + ITAD' : 'Order + Return',
+    priceOverrides: getOverriddenFields().length > 0 ? '⚠ PRICES OVERRIDDEN: ' + getOverriddenFields().join(', ') : 'Standard pricing',
     approvalStatus: document.getElementById('approvalTitle').textContent,
   };
 
