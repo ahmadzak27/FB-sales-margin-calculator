@@ -710,11 +710,43 @@
         <thead>
           <tr>
             <th>Country</th><th>Onboards</th><th>Leavers</th><th>ITAD</th>
-            <th>Refreshes</th><th>Intakes</th><th>Rev (net)</th><th>Cost</th><th>Margin</th>
+            <th>Refreshes</th><th>Intakes</th><th>Expedited</th><th>Overnight</th><th>Lightweight</th>
+            <th>Rev (net)</th><th>Cost</th><th>Margin</th>
           </tr>
         </thead>
         <tbody id="breakdownBody"></tbody>
       </table>
+    </div>
+
+    <!-- STORAGE IMPACT CALLOUT — only shown when storage is entered -->
+    <div id="storageImpactCard" style="display:none;background:var(--surface);border:1px solid var(--orange);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">📦</span>
+          <div>
+            <div style="font-family:var(--display);font-size:13px;font-weight:700;color:var(--orange);">Storage Exception Impact</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:1px;">Annual cost Firstbase absorbs for free storage exception</div>
+          </div>
+        </div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--orange);" id="storageTotalCost">—</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Land GM without storage</div>
+          <div style="font-family:var(--display);font-size:17px;font-weight:700;color:var(--green);" id="storageGMWithout">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Land GM with storage</div>
+          <div style="font-family:var(--display);font-size:17px;font-weight:700;color:var(--orange);" id="storageGMWith">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Margin impact</div>
+          <div style="font-family:var(--display);font-size:17px;font-weight:700;color:var(--red);" id="storageGMDelta">—</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);">
+        <a style="color:var(--accent);cursor:pointer;" onclick="showPage('storage', document.querySelectorAll('.nav-tab')[2])">Edit storage exceptions ↗</a>
+      </div>
     </div>
 
     <div class="snapshot-area">
@@ -807,6 +839,40 @@
 </div>
 
 <!-- ================================================================
+     STORAGE PAGE
+================================================================ -->
+<div class="page settings-page" id="page-storage">
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Storage Exceptions</div>
+        <div class="settings-section-sub">Enter devices in storage per country. Rates are set in Settings &amp; Rates. Annual cost = devices × rate × 12 months.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 12px;" onclick="clearStorage()">✕ Clear All</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="settings-table" id="storageTable">
+        <thead>
+          <tr>
+            <th>Country</th>
+            <th style="text-align:right;">Laptops</th>
+            <th style="text-align:right;">$/mo rate</th>
+            <th style="text-align:right;">Peripherals</th>
+            <th style="text-align:right;">$/mo rate</th>
+            <th style="text-align:right;">Monitors</th>
+            <th style="text-align:right;">$/mo rate</th>
+            <th style="text-align:right;">Annual Cost</th>
+          </tr>
+        </thead>
+        <tbody id="storageBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
      SETTINGS PAGE
 ================================================================ -->
 <div class="page settings-page" id="page-settings">
@@ -869,6 +935,40 @@
           <tbody id="costsBody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- STORAGE RATES -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Storage Rates by Country</div>
+        <div class="settings-section-sub">Monthly cost per device in USD — used to calculate annual storage exception costs</div>
+      </div>
+      <button class="btn" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 12px;" onclick="resetStorageRates()">↺ Reset to Defaults</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="settings-table" id="storageRatesTable">
+        <thead><tr><th>Country</th><th style="text-align:right;">Laptop ($/mo)</th><th style="text-align:right;">Peripheral ($/mo)</th><th style="text-align:right;">Monitor ($/mo)</th></tr></thead>
+        <tbody id="storageRatesBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STORAGE RATES -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Storage Rates by Country</div>
+        <div class="settings-section-sub">Monthly cost per device in USD — used to calculate annual storage exception costs</div>
+      </div>
+      <button class="btn" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 12px;" onclick="resetStorageRates()">↺ Reset to Defaults</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="settings-table" id="storageRatesTable">
+        <thead><tr><th>Country</th><th style="text-align:right;">Laptop ($/mo)</th><th style="text-align:right;">Peripheral ($/mo)</th><th style="text-align:right;">Monitor ($/mo)</th></tr></thead>
+        <tbody id="storageRatesBody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -965,7 +1065,7 @@ const FALLBACK_COUNTRIES = [
   {name:'Mexico (USD)',      tier:2,currency:'USD',prices:[205,null,null,100,220,165,425,150],costs:[66,null,null,66,63,45,45,47]},
   {name:'Israel (USD)',      tier:2,currency:'USD',prices:[195,null,null,100,219,165,414,150],costs:[130,null,null,130,177,115,115,77]},
   {name:'Brazil (USD)',      tier:2,currency:'USD',prices:[410,null,null,100,400,260,810,150],costs:[181,null,null,181,171,250,250,59]},
-  {name:'Australia (USD)',   tier:2,currency:'USD',prices:[185,null,null,100,350,250,535,250],costs:[80,null,null,80,247,185,185,173]},
+  {name:'Australia (USD)',   tier:2,currency:'USD',prices:[185,null,null,100,350,250,535,250],costs:[60,null,null,60,163,120,120,120]},
   {name:'Argentina (USD)',   tier:2,currency:'USD',prices:[360,null,null,100,300,225,660,150],costs:[80,null,null,80,77,220,220,47]},
   {name:'Japan (USD)',       tier:2,currency:'USD',prices:[230,null,null,100,250,220,480,200],costs:[93,null,null,93,152,200,200,107]},
   {name:'Philippines (USD)', tier:2,currency:'USD',prices:[230,null,null,100,250,200,480,150],costs:[109,null,null,109,139,105,105,62]},
@@ -982,8 +1082,35 @@ const FALLBACK_COUNTRIES = [
 let tiers = [...FALLBACK_TIERS];
 let actionDiscounts = [...FALLBACK_ACTION_DISCOUNTS];
 let countries = JSON.parse(JSON.stringify(FALLBACK_COUNTRIES));
+// Storage rates: [laptop, peripheral, monitor] $/device/month (all in USD)
+const FALLBACK_STORAGE_RATES = {
+  'U.S. (USD)':        [0, 0, 0],
+  'U.K. (GBP)':        [0, 0, 0],
+  'E.U. (EUR)':        [0, 0, 0],
+  'Canada (CAD)':      [0, 0, 0],
+  'India (USD)':       [0, 0, 0],
+  'Singapore (USD)':   [10.00, 10.00, 10.00],
+  'Mexico (USD)':      [12.00, 2.00, 12.00],
+  'Israel (USD)':      [10.00, 10.00, 10.00],
+  'Brazil (USD)':      [24.00, 3.00, 24.00],
+  'Australia (USD)':   [19.50, 19.50, 19.50],
+  'Argentina (USD)':   [12.00, 2.00, 12.00],
+  'Japan (USD)':       [6.00, 2.00, 8.00],
+  'Philippines (USD)': [6.50, 1.08, 16.25],
+  'Colombia (USD)':    [16.00, 2.00, 16.00],
+  'Guatemala (USD)':   [24.00, 3.00, 24.00],
+  'Malaysia (USD)':    [2.20, 2.20, 2.20],
+  'Costa Rica (USD)':  [24.00, 3.00, 24.00],
+  'UAE (USD)':         [10.00, 3.00, 10.00],
+  'South Korea (USD)': [14.00, 14.00, 14.00],
+  'New Zealand (USD)': [3.00, 3.00, 3.00],
+  'Chile (USD)':       [18.00, 18.00, 18.00],
+};
+let storageRates = JSON.parse(JSON.stringify(FALLBACK_STORAGE_RATES));
+let storageVolumes = {}; // { countryName: { laptops: 0, peripherals: 0, monitors: 0 } }
+
 let FTE_RATIOS = { onboards: 0.20, leavers: 0.15, itad: 0.05, refreshes: 0.10, intakes: 0.05 };
-let FX_RATES = { GBP: 1.27, EUR: 1.08, CAD: 0.74, USD: 1.00 };
+let FX_RATES = { GBP: 1.27, EUR: 1.08, CAD: 0.74, USD: 1.00, AUD: 0.65, MYR: 0.22, NZD: 0.60 };
 let landVolumes = {};
 let expansionVolumes = {};
 let currentActTab = 'land';
@@ -999,6 +1126,7 @@ function showPage(name, btn) {
   if (btn) btn.classList.add('active');
   currentPage = name;
   if (name === 'settings') renderSettingsTables();
+  if (name === 'storage') buildStorageTable();
 }
 
 // ============================================================
@@ -1068,6 +1196,7 @@ async function reloadData() {
   }
   buildTierSelect();
   initVolumes();
+  initStorage();
   buildActionsTable('land');
   buildActionsTable('expansion');
   onSeatsChange();
@@ -1143,9 +1272,9 @@ function buildActionsTable(mode) {
           <th class="action-col">ITAD <span class="tip-icon" data-tip-title="ITAD" data-tip="IT Asset Disposal — secure wiping and recycling of retired devices. Separate pricing from standard returns." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="action-col">Refreshes <span class="tip-icon" data-tip-title="Refreshes" data-tip="Device refresh cycles — retrieving old equipment and sending new. Uses the standard Order price per unit." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="action-col">Intakes <span class="tip-icon" data-tip-title="Intakes" data-tip="Receiving and warehousing equipment sent in by the customer. Priced at the Intake rate per unit." style="vertical-align:middle;margin-left:4px;">?</span></th>
-          <th class="action-col" style="background:rgba(244,110,115,0.08);">Expedited <span class="tip-icon" data-tip-title="Expedited Orders" data-tip="Standard expedited shipping for onboard orders. Priced at the Standard Expedited Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
-          <th class="action-col" style="background:rgba(244,110,115,0.08);">Overnight <span class="tip-icon" data-tip-title="Overnight Orders" data-tip="Overnight shipping for urgent onboard orders. Priced at the Overnight Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
-          <th class="action-col" style="background:rgba(244,110,115,0.08);">Lightweight <span class="tip-icon" data-tip-title="Lightweight Orders" data-tip="Lightweight order shipping. Priced at the Lightweight Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
+          <th class="action-col">Expedited <span class="tip-icon" data-tip-title="Expedited Orders" data-tip="Standard expedited shipping for onboard orders. Priced at the Standard Expedited Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
+          <th class="action-col">Overnight <span class="tip-icon" data-tip-title="Overnight Orders" data-tip="Overnight shipping for urgent onboard orders. Priced at the Overnight Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
+          <th class="action-col">Lightweight <span class="tip-icon" data-tip-title="Lightweight Orders" data-tip="Lightweight order shipping. Priced at the Lightweight Order rate." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="fte-col">FTE Helper <span class="tip-icon" data-tip-title="FTE Helper" data-tip="Enter total headcount for this country and we auto-estimate action volumes using the ratios set in Settings. Adjust individual fields after if needed." style="vertical-align:middle;margin-left:4px;">?</span></th>
           <th class="action-col" style="text-align:right;padding-right:14px;">Actions Total</th>
         </tr>
@@ -1510,6 +1639,103 @@ function handleCSVUpload(event) {
 // ============================================================
 // SETTINGS TABLES
 // ============================================================
+// ============================================================
+// STORAGE EXCEPTIONS
+// ============================================================
+function initStorage() {
+  countries.forEach(c => {
+    if (!storageVolumes[c.name]) storageVolumes[c.name] = { laptops: 0, peripherals: 0, monitors: 0 };
+  });
+}
+
+function getAnnualStorageCost(countryName) {
+  const v = storageVolumes[countryName] || { laptops: 0, peripherals: 0, monitors: 0 };
+  const r = storageRates[countryName] || [0, 0, 0];
+  return (v.laptops * r[0] + v.peripherals * r[1] + v.monitors * r[2]) * 12;
+}
+
+function getTotalStorageCost() {
+  return countries.reduce((sum, c) => sum + getAnnualStorageCost(c.name), 0);
+}
+
+function buildStorageTable() {
+  const tbody = document.getElementById('storageBody');
+  if (!tbody) return;
+  let html = '', totalCost = 0;
+  countries.forEach(c => {
+    const v = storageVolumes[c.name] || { laptops: 0, peripherals: 0, monitors: 0 };
+    const r = storageRates[c.name] || [0, 0, 0];
+    const annual = getAnnualStorageCost(c.name);
+    totalCost += annual;
+    const hasStorage = annual > 0;
+    const rowStyle = hasStorage ? 'background:rgba(212,143,0,0.06);' : '';
+    html += `<tr style="${rowStyle}">
+      <td style="font-weight:${hasStorage?'600':'400'};color:${hasStorage?'var(--text)':'var(--text2)'};">${c.name}</td>
+      <td style="text-align:right;"><input type="number" min="0" value="${v.laptops||0}" data-country="${c.name}" data-dtype="laptops" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);font-family:var(--mono);" oninput="onStorageChange(this)"></td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text3);">$${r[0]}/mo</td>
+      <td style="text-align:right;"><input type="number" min="0" value="${v.peripherals||0}" data-country="${c.name}" data-dtype="peripherals" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);font-family:var(--mono);" oninput="onStorageChange(this)"></td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text3);">$${r[1]}/mo</td>
+      <td style="text-align:right;"><input type="number" min="0" value="${v.monitors||0}" data-country="${c.name}" data-dtype="monitors" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);font-family:var(--mono);" oninput="onStorageChange(this)"></td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text3);">$${r[2]}/mo</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:${hasStorage?'var(--orange)':'var(--text3)'};">${hasStorage?'$'+Math.round(annual).toLocaleString()+'/yr':'—'}</td>
+    </tr>`;
+  });
+  // Total row
+  html += `<tr style="background:var(--surface2);font-weight:600;border-top:2px solid var(--border2);">
+    <td>TOTAL</td><td></td><td></td><td></td><td></td><td></td><td></td>
+    <td style="text-align:right;font-family:var(--mono);font-size:13px;color:${totalCost>0?'var(--orange)':'var(--text3)'};">
+      ${totalCost>0?'$'+Math.round(totalCost).toLocaleString()+'/yr':'—'}
+    </td>
+  </tr>`;
+  tbody.innerHTML = html;
+}
+
+function onStorageChange(inp) {
+  const { country, dtype } = inp.dataset;
+  if (!storageVolumes[country]) storageVolumes[country] = { laptops: 0, peripherals: 0, monitors: 0 };
+  storageVolumes[country][dtype] = parseInt(inp.value) || 0;
+  buildStorageTable();
+  recalc();
+}
+
+function clearStorage() {
+  countries.forEach(c => { storageVolumes[c.name] = { laptops: 0, peripherals: 0, monitors: 0 }; });
+  buildStorageTable();
+  recalc();
+}
+
+function renderStorageRatesTable() {
+  const tbody = document.getElementById('storageRatesBody');
+  if (!tbody) return;
+  let html = '';
+  countries.forEach(c => {
+    const r = storageRates[c.name] || [0, 0, 0];
+    const hasRates = r.some(x => x > 0);
+    html += `<tr>
+      <td>${c.name}</td>
+      <td style="text-align:right;"><input type="number" min="0" step="0.01" value="${r[0]}" data-country="${c.name}" data-ridx="0" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;" oninput="onStorageRateChange(this)"></td>
+      <td style="text-align:right;"><input type="number" min="0" step="0.01" value="${r[1]}" data-country="${c.name}" data-ridx="1" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;" oninput="onStorageRateChange(this)"></td>
+      <td style="text-align:right;"><input type="number" min="0" step="0.01" value="${r[2]}" data-country="${c.name}" data-ridx="2" style="width:80px;text-align:center;padding:4px 8px;font-size:12px;" oninput="onStorageRateChange(this)"></td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function onStorageRateChange(inp) {
+  const { country, ridx } = inp.dataset;
+  if (!storageRates[country]) storageRates[country] = [0, 0, 0];
+  storageRates[country][parseInt(ridx)] = parseFloat(inp.value) || 0;
+  buildStorageTable();
+  recalc();
+}
+
+function resetStorageRates() {
+  storageRates = JSON.parse(JSON.stringify(FALLBACK_STORAGE_RATES));
+  renderStorageRatesTable();
+  buildStorageTable();
+  recalc();
+}
+
 function saveFxRates() {
   FX_RATES.GBP = parseFloat(document.getElementById('fxGBP').value) || 1.27;
   FX_RATES.EUR = parseFloat(document.getElementById('fxEUR').value) || 1.08;
@@ -1615,6 +1841,7 @@ function renderSettingsTables() {
   document.getElementById('costsBody').innerHTML=cb;
   updateFteExamples();
   updateFxExamples();
+  renderStorageRatesTable();
 }
 
 // ============================================================
@@ -1684,10 +1911,14 @@ function recalc() {
   const eDisc = actDiscOverrideOn ? actDiscOverridePct : lookupDiscount(ea.grossRev);
   const lActNet=la.grossRev*(1-lDisc), eActNet=ea.grossRev*(1-eDisc);
 
-  const landRev=landSaasArr+lActNet, landCost=landSaasArr*(1-SAAS_MARGIN)+la.cost;
+  const totalStorageCost = getTotalStorageCost();
+  const landRevNoStorage=landSaasArr+lActNet, landCostNoStorage=landSaasArr*(1-SAAS_MARGIN)+la.cost;
+  const landRev=landRevNoStorage, landCost=landCostNoStorage+totalStorageCost;
   const landGM=landRev>0?(landRev-landCost)/landRev:0;
+  const landGMNoStorage=landRevNoStorage>0?(landRevNoStorage-landCostNoStorage)/landRevNoStorage:0;
   const expRev=landRev+expSaasArr+eActNet, expCost=landCost+expSaasArr*(1-SAAS_MARGIN)+ea.cost;
   const expGM=expRev>0?(expRev-expCost)/expRev:0;
+  const expGMNoStorage=expRev>0?(expRev-(expCost-totalStorageCost))/expRev:0;
 
   const fmt=n=>'$'+Math.round(n).toLocaleString();
   const fp=n=>(n*100).toFixed(1)+'%';
@@ -1764,6 +1995,21 @@ function recalc() {
 
   renderBreakdown(la.breakdown, lDisc);
   document.getElementById('breakdownTotalLabel').textContent=`Gross: ${fmt(la.grossRev)} → Net: ${fmt(lActNet)} after ${(lDisc*100).toFixed(1)}% tier discount`;
+
+  // Storage impact callout
+  const storageCard = document.getElementById('storageImpactCard');
+  if (totalStorageCost > 0) {
+    storageCard.style.display = 'block';
+    document.getElementById('storageTotalCost').textContent = fmt(totalStorageCost) + '/yr';
+    document.getElementById('storageGMWithout').textContent = fp(landGMNoStorage);
+    document.getElementById('storageGMWith').textContent = fp(landGM);
+    const delta = (landGM - landGMNoStorage) * 100;
+    const deltaEl = document.getElementById('storageGMDelta');
+    deltaEl.textContent = delta.toFixed(1) + ' pts';
+    deltaEl.style.color = 'var(--red)';
+  } else {
+    storageCard.style.display = 'none';
+  }
 }
 
 function renderBreakdown(breakdown, disc) {
@@ -2010,7 +2256,7 @@ window.addEventListener('DOMContentLoaded', ()=>{ reloadData(); });
 // SUBMIT DEAL
 // ============================================================
 // Paste your deployed Apps Script URL here after setup:
-const SUBMIT_URL = '';
+const SUBMIT_URL = 'https://script.google.com/a/macros/firstbase.com/s/AKfycbw-ktTBxijw43DNKlUZiUck2zLEbk5LY1DYBhJJ6uo2UVB4JGophF8zhkpQLw0CBr45RA/exec';
 
 function openSubmitModal() {
   const cust   = document.getElementById('customerName').value.trim() || '—';
@@ -2098,6 +2344,7 @@ async function submitDeal() {
     actionDiscount: document.getElementById('actionDiscountVal').textContent + (document.getElementById('overrideActDisc').value==='yes' ? ' (override)' : ''),
     refreshBasis:   document.getElementById('refreshBasis').value === 'itad' ? 'Order + ITAD' : 'Order + Return',
     priceOverrides: getOverriddenFields().length > 0 ? '⚠ PRICES OVERRIDDEN: ' + getOverriddenFields().join(', ') : 'Standard pricing',
+    storageCost:    getTotalStorageCost() > 0 ? '$' + Math.round(getTotalStorageCost()).toLocaleString() + '/yr (' + countries.filter(c => getAnnualStorageCost(c.name) > 0).map(c => c.name + ': $' + Math.round(getAnnualStorageCost(c.name)).toLocaleString()).join(', ') + ')' : 'None',
     approvalStatus: document.getElementById('approvalTitle').textContent,
   };
 
