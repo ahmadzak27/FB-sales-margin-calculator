@@ -463,6 +463,13 @@
   .price-override-input:focus { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(212,143,0,0.15); }
   .price-override-input.edited { background: #fff8e6; border-color: var(--orange); }
   .price-edit-active #editPricesBtn { background: var(--yellow-dim) !important; border-color: var(--yellow) !important; color: var(--yellow) !important; }
+
+  /* MODE TOGGLE */
+  .mode-toggle { display:flex; align-items:center; background:rgba(255,255,255,0.1); border-radius:20px; padding:3px; gap:2px; border:1px solid rgba(255,255,255,0.15); }
+  .mode-btn { font-family:var(--display); font-size:11px; font-weight:600; padding:4px 12px; border-radius:16px; border:none; cursor:pointer; transition:all 0.15s; background:transparent; color:rgba(255,255,255,0.5); }
+  .mode-btn.active { background:#fff; color:var(--text); }
+  .mode-btn.renewal.active { background:var(--orange); color:#fff; }
+  .renewal-badge { display:inline-block; background:var(--orange); color:#fff; font-family:var(--mono); font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; letter-spacing:0.5px; margin-left:8px; vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -474,10 +481,15 @@
 
 <header class="header">
   <div class="header-left">
-    <div class="logo">Firstbase <span>·</span> Deal Margin Calculator</div>
+    <div class="logo">Firstbase <span>·</span> Deal Margin Calculator <span id="renewalBadge" class="renewal-badge" style="display:none;">RENEWAL</span></div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeNew" onclick="setDealMode('new')">New Deal</button>
+      <button class="mode-btn renewal" id="modeRenewal" onclick="setDealMode('renewal')">Renewal</button>
+    </div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('calc', this)">Calculator</button>
       <button class="nav-tab" onclick="showPage('actions', this)">Actions</button>
+      <button class="nav-tab" id="renewalNavTab" style="display:none;" onclick="showPage('renewal', this)">Renewal</button>
       <button class="nav-tab" onclick="showPage('storage', this)">Storage</button>
       <button class="nav-tab" onclick="showPage('settings', this)">Settings & Rates</button>
     </nav>
@@ -746,7 +758,7 @@
         </div>
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--text3);">
-        <a style="color:var(--accent);cursor:pointer;" onclick="showPage('storage', document.querySelectorAll('.nav-tab')[2])">Edit storage exceptions ↗</a>
+        <a style="color:var(--accent);cursor:pointer;" onclick="showPage('storage', document.querySelectorAll('.nav-tab')[3])">Edit storage exceptions ↗</a>
       </div>
     </div>
 
@@ -836,6 +848,127 @@
     <div id="actLandTable"></div>
     <div id="actExpTable" style="display:none;"></div>
   </div>
+</div>
+
+<!-- ================================================================
+     RENEWAL PAGE
+================================================================ -->
+<div class="page settings-page" id="page-renewal">
+
+  <!-- UPLOAD + SEATS -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Contract History</div>
+        <div class="settings-section-sub">Upload action report CSVs for each contract period. Standard Orders/Returns = 1 row per action. ITAD/Intake = uses Summary Qty (item count).</div>
+      </div>
+    </div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Period label + seats + upload -->
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;">Period Label</div>
+          <input type="text" id="renewalPeriodLabel" placeholder="e.g. Contract to Date, Y1 Land" style="font-size:12px;">
+        </div>
+        <div style="width:140px;" title="Seats can also be entered separately below">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;">Contract Seats <span style="font-size:10px;color:var(--text3);">(optional)</span></div>
+          <input type="number" id="renewalSeats" min="0" placeholder="e.g. 500" style="font-size:12px;" oninput="renderRenewalTab()">
+        </div>
+        <label class="btn btn-primary" style="cursor:pointer;align-self:flex-end;">
+          ⬆ Upload CSV
+          <input type="file" id="renewalCsvUpload" accept=".csv" style="display:none;" onchange="handleRenewalUpload(event)">
+        </label>
+      </div>
+      <div id="renewalUploadStatus" style="font-family:var(--mono);font-size:11px;color:var(--text3);"></div>
+    </div>
+  </div>
+
+  <!-- PERIODS TIMELINE -->
+  <div class="settings-section" id="renewalPeriodsSection" style="display:none;">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Contract Periods</div>
+        <div class="settings-section-sub">Historical periods uploaded this session · Action counts reflect rows in uploaded file</div>
+      </div>
+      <button class="btn" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 12px;" onclick="clearRenewalPeriods()">✕ Clear All</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="settings-table" id="renewalPeriodsTable">
+        <thead>
+          <tr>
+            <th>Period</th><th>Seats</th><th>Discount</th>
+            <th style="text-align:right;">Onboards</th><th style="text-align:right;">Leavers</th>
+            <th style="text-align:right;">ITAD</th><th style="text-align:right;">Intakes</th>
+            <th style="text-align:right;">Expedited</th><th style="text-align:right;">Overnight</th>
+            <th style="text-align:right;">Lightweight</th><th style="text-align:right;">Total Actions</th>
+            <th style="text-align:right;">Action Spend</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="renewalPeriodsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CONTRACT TO DATE — SAAS INPUTS -->
+  <div class="settings-section" id="renewalSaasSection" style="display:none;">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Contract to Date — SAAS</div>
+        <div class="settings-section-sub">Enter the existing contract's software terms to calculate blended margin</div>
+      </div>
+    </div>
+    <div style="padding:16px 20px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="width:140px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;">Seats</div>
+        <input type="number" id="ctdSeats" min="0" placeholder="e.g. 500" style="font-size:12px;background:var(--input-bg);border-color:var(--input-border);" oninput="updateCtdSaas()">
+      </div>
+      <div style="width:130px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;">Discount %</div>
+        <div style="position:relative;">
+          <input type="number" id="ctdDiscPct" min="0" max="100" step="0.5" placeholder="e.g. 30" style="font-size:12px;padding-right:26px;background:var(--input-bg);border-color:var(--input-border);" oninput="updateCtdSaas()">
+          <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:12px;color:var(--text3);">%</span>
+        </div>
+      </div>
+      <div style="width:150px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;">One-Time Discount $</div>
+        <div style="position:relative;">
+          <input type="number" id="ctdDiscDollar" min="0" placeholder="e.g. 5000" style="font-size:12px;padding-left:20px;background:var(--input-bg);border-color:var(--input-border);" oninput="updateCtdSaas()">
+          <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:12px;color:var(--text3);">$</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;">Implied SAAS ARR</div>
+        <div id="ctdSaasArr" style="font-family:var(--display);font-size:20px;font-weight:700;color:var(--text);padding:6px 0;">—</div>
+        <div id="ctdSaasTier" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:2px;">Enter seats to calculate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON: CONTRACT TO DATE vs RENEWAL PROPOSAL -->
+  <div class="settings-section" id="renewalCompareSection" style="display:none;">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Contract to Date vs Renewal Proposal</div>
+        <div class="settings-section-sub">Side-by-side comparison of historical actuals vs current calculator</div>
+      </div>
+    </div>
+    <div id="renewalCompareBody" style="padding:16px 20px;"></div>
+  </div>
+
+  <!-- PRICE GRI NOTES -->
+  <div class="settings-section" id="renewalPriceSection" style="display:none;">
+    <div class="settings-section-header">
+      <div>
+        <div class="settings-section-title">Price Changes (GRI Applied)</div>
+        <div class="settings-section-sub">Historical prices from CSV vs new April 1 rates in calculator — informational only, renewal uses new rates</div>
+      </div>
+    </div>
+    <table class="settings-table">
+      <thead><tr><th>Country</th><th>Action Type</th><th style="text-align:right;">Historical Price</th><th style="text-align:right;">New Rate</th><th style="text-align:right;">Change</th></tr></thead>
+      <tbody id="renewalPriceBody"></tbody>
+    </table>
+  </div>
+
 </div>
 
 <!-- ================================================================
@@ -1142,6 +1275,7 @@ function showPage(name, btn) {
   currentPage = name;
   if (name === 'settings') renderSettingsTables();
   if (name === 'storage') buildStorageTable();
+  if (name === 'renewal') renderRenewalTab();
 }
 
 // ============================================================
@@ -1155,9 +1289,9 @@ function csvUrl(gid) {
 function parseCSV(text) {
   const rows = [];
   let cur = '', inQ = false, row = [];
-  // Replace \r\n row separators with \r (sentinel), leave bare \n (in-cell) alone
-  text = text.replace(/\r\n/g, '\r');
-  // Any remaining bare \r → \r, bare \n inside quoted cells will be spaces
+  // Normalize: convert \r\n → \n, then bare \r → \n
+  // This way \n is always the row separator outside quotes
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
@@ -1165,15 +1299,14 @@ function parseCSV(text) {
       else inQ = !inQ;
     } else if (ch === ',' && !inQ) {
       row.push(cur.trim()); cur = '';
-    } else if (ch === '\r' && !inQ) {
-      // Real row break
+    } else if (ch === '\n' && !inQ) {
+      // Row break
       row.push(cur.trim()); cur = '';
       if (row.some(c => c !== '')) rows.push(row);
       row = [];
-    } else if (ch === '\n') {
-      // Bare \n — always in-cell (we already converted \r\n to \r)
-      if (inQ) cur += ' ';
-      // else ignore stray \n outside quotes
+    } else if (ch === '\n' && inQ) {
+      // In-cell newline — replace with space
+      cur += ' ';
     } else {
       cur += ch;
     }
@@ -1406,6 +1539,41 @@ function switchActTab(mode, btn) {
 // ============================================================
 // PRICE EDIT MODE
 // ============================================================
+// ============================================================
+// RENEWAL MODE STATE
+// ============================================================
+let dealMode = 'new'; // 'new' or 'renewal'
+let renewalPeriods = []; // [{label, discount, seats, volumes, priceMismatches, rowCount}]
+
+const REGION_CODE_MAP = {
+  'US': 'U.S. (USD)', 'UK': 'U.K. (GBP)', 'EU': 'E.U. (EUR)', 'SE': 'E.U. (EUR)',
+  'AU': 'Australia (USD)', 'CA': 'Canada (CAD)', 'IN': 'India (USD)',
+  'SG': 'Singapore (USD)', 'MX': 'Mexico (USD)', 'BR': 'Brazil (USD)',
+  'IL': 'Israel (USD)', 'AE': 'UAE (USD)', 'JP': 'Japan (USD)',
+  'PH': 'Philippines (USD)', 'KR': 'South Korea (USD)', 'NZ': 'New Zealand (USD)',
+  'AR': 'Argentina (USD)', 'GT': 'Guatemala (USD)', 'MY': 'Malaysia (USD)',
+  'CR': 'Costa Rica (USD)', 'CO': 'Colombia (USD)', 'CL': 'Chile (USD)'
+};
+
+const ACTION_TYPE_MAP = {
+  'standard order':                        0, // Onboards
+  'standard return':                       1, // Leavers
+  'itad return':                           2, // ITAD (full return + disposal only)
+  'intake':                                4, // Intakes
+  'standard expedited order':              5, // Expedited
+  'overnight expedited order shipping':    6, // Overnight
+  'overnight order':                       6, // Overnight
+  'lightweight order':                     7, // Lightweight
+  'lightweight expedited order':           7, // Lightweight
+};
+
+const ACTION_LABELS = ['Onboards','Leavers','ITAD','Refreshes','Intakes','Expedited','Overnight','Lightweight'];
+
+// Calculator price index per action type index
+const ACTION_PRICE_IDX = [0, 4, 5, 6, 7, 1, 2, 3];
+// Only compare GRI-subject action types (skip Lightweight=7 and Overnight=6 — shipping surcharges)
+const GRI_COMPARE_TYPES = new Set([0, 1, 2, 4, 5]); // Onboards, Leavers, ITAD, Intakes, Expedited
+
 let priceEditMode = false;
 let priceOverrides = {}; // { 'U.S. (USD)': [null,null,null,null,null,null,null,null] }
 
@@ -1727,6 +1895,307 @@ function onStorageChange(inp) {
     }
   }
   recalc();
+}
+
+// ============================================================
+// RENEWAL MODE
+// ============================================================
+function setDealMode(mode) {
+  dealMode = mode;
+  document.getElementById('modeNew').classList.toggle('active', mode === 'new');
+  document.getElementById('modeRenewal').classList.toggle('active', mode === 'renewal');
+  document.getElementById('renewalBadge').style.display = mode === 'renewal' ? 'inline-block' : 'none';
+  document.getElementById('renewalNavTab').style.display = mode === 'renewal' ? 'inline-block' : 'none';
+  if (mode === 'renewal') {
+    showPage('renewal', document.getElementById('renewalNavTab'));
+  } else {
+    showPage('calc', document.querySelector('.nav-tab'));
+  }
+}
+
+function handleRenewalUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const label = document.getElementById('renewalPeriodLabel').value.trim() || 'Contract to Date';
+  const seats = parseInt(document.getElementById('renewalSeats').value) || 0;
+  const status = document.getElementById('renewalUploadStatus');
+  status.textContent = '⏳ Parsing…';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const rows = parseCSV(e.target.result);
+    if (rows.length < 2) { status.textContent = '✗ File appears empty'; return; }
+
+    // Find header row
+    let headerIdx = 0;
+    for (let i = 0; i < Math.min(3, rows.length); i++) {
+      if (rows[i].some(h => (h||'').toLowerCase().includes('action type'))) { headerIdx = i; break; }
+    }
+    const header = rows[headerIdx].map(h => (h||'').toLowerCase());
+    const regionCodeCol = header.findIndex(h => h.includes('region code'));
+    const actionTypeCol  = header.findIndex(h => h.includes('action type'));
+    const unitPriceCol   = header.findIndex(h => h.includes('unit price'));
+    const discountCol    = header.findIndex(h => h.includes('discount'));
+    const totalCol       = header.findIndex(h => h.includes('summary total'));
+    const qtyCol         = header.findIndex(h => h.includes('summary qty') || h === 'qty' || h === 'quantity');
+
+    // Counting logic:
+    // - Standard Order/Return/Expedited/Overnight/Lightweight: each row = 1 action (1 device)
+    // - ITAD Processing, Intake: use Summary Qty (number of items/devices in that action)
+    const QTY_BASED_TYPES = new Set(['itad return', 'intake']);
+
+    const volumes = {}; // { countryName: [0,0,0,0,0,0,0,0] }
+    const actionSpend = {}; // { countryName: number }
+    const filePrices = {}; // { 'countryName|typeIdx': Set of prices }
+    const discounts = new Set();
+
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      const regionCode = (row[regionCodeCol]||'').trim().toUpperCase();
+      const actionType = (row[actionTypeCol]||'').trim().toLowerCase();
+      const unitPrice  = parseFloat((row[unitPriceCol]||'').replace(/[$,]/g,'')) || 0;
+      const discount   = parseFloat((row[discountCol]||'').replace(/[%,]/g,'')) || 0;
+      const total      = parseFloat((row[totalCol]||'').replace(/[$,]/g,'')) || 0;
+      const summaryQty = parseInt((row[qtyCol]||'').replace(/[$,]/g,'')) || 1;
+
+      const countryName = REGION_CODE_MAP[regionCode];
+      if (!countryName) continue; // unmapped region
+
+      const typeIdx = ACTION_TYPE_MAP[actionType];
+      if (typeIdx === undefined) continue; // ignored (Other, etc)
+
+      if (!volumes[countryName]) volumes[countryName] = [0,0,0,0,0,0,0,0];
+
+      // Use Summary Qty for item-based actions, 1 for device-based actions
+      const count = QTY_BASED_TYPES.has(actionType) ? summaryQty : 1;
+      volumes[countryName][typeIdx] += count;
+
+      // Spend: for row-counted types use 1 × unitPrice × (1-discount); for qty-based use Summary Total
+      const rowSpend = QTY_BASED_TYPES.has(actionType)
+        ? total
+        : unitPrice * (1 - discount / 100);
+
+      actionSpend[countryName] = (actionSpend[countryName]||0) + rowSpend;
+      discounts.add(discount);
+
+      const priceKey = countryName + '|' + typeIdx;
+      if (!filePrices[priceKey]) filePrices[priceKey] = new Set();
+      filePrices[priceKey].add(unitPrice);
+    }
+
+    // Detect discount (use most common)
+    const discountArr = [...discounts].filter(d => d > 0);
+    const detectedDiscount = discountArr.length > 0 ? Math.round(discountArr.sort((a,b) =>
+      discountArr.filter(x=>x===b).length - discountArr.filter(x=>x===a).length)[0]) : 0;
+
+    // Build price mismatch notes
+    const priceMismatches = [];
+    Object.entries(filePrices).forEach(([key, priceSet]) => {
+      const [countryName, typeIdxStr] = key.split('|');
+      const typeIdx = parseInt(typeIdxStr);
+      if (!GRI_COMPARE_TYPES.has(typeIdx)) return; // skip Lightweight/Overnight — not GRI-subject
+      const country = countries.find(c => c.name === countryName);
+      if (!country) return;
+      const priceIdx = ACTION_PRICE_IDX[typeIdx];
+      const calcPrice = country.prices[priceIdx];
+      const filePriceArr = [...priceSet].filter(p => p > 0);
+      const filePrice = filePriceArr.length > 0 ? Math.max(...filePriceArr) : null;
+      if (filePrice && calcPrice && Math.abs(filePrice - calcPrice) > 0.5) {
+        const sym = {GBP:'£', EUR:'€', CAD:'CA$', USD:'$'}[country.currency] || '$';
+        priceMismatches.push({
+          country: countryName, typeIdx, sym,
+          filePrice, calcPrice,
+          label: ACTION_LABELS[typeIdx]
+        });
+      }
+    });
+
+    // Store period
+    const totalActions = Object.values(volumes).reduce((s,v) => s + v.reduce((a,b)=>a+b,0), 0);
+    const totalSpend = Object.values(actionSpend).reduce((a,b)=>a+b,0);
+    const period = { label, seats, discount: detectedDiscount, volumes, actionSpend, priceMismatches, totalActions, totalSpend, filename: file.name };
+    renewalPeriods.push(period);
+
+    // Auto-populate Actions tab with this period's volumes
+    Object.entries(volumes).forEach(([country, vols]) => {
+      landVolumes[country] = [...vols];
+    });
+    buildActionsTable('land');
+
+    // Auto-set action discount override (CSV discount is applied to action prices, not SAAS)
+    if (detectedDiscount > 0) {
+      document.getElementById('overrideActDisc').value = 'yes';
+      document.getElementById('actDiscOverrideField').style.display = 'block';
+      document.getElementById('actDiscOverrideVal').value = detectedDiscount;
+    }
+
+    renderRenewalTab();
+    recalc();
+
+    status.style.color = 'var(--green)';
+    status.textContent = `✓ Loaded "${label}" — ${totalActions} actions across ${Object.keys(volumes).length} countries`;
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function getCtdSaasData() {
+  const seats = parseInt(document.getElementById('ctdSeats').value) || 0;
+  const discPct = (parseFloat(document.getElementById('ctdDiscPct').value) || 0) / 100;
+  const discDollar = parseFloat(document.getElementById('ctdDiscDollar').value) || 0;
+  let tierData = null;
+  if (seats > 0) {
+    tierData = tiers[0];
+    for (let i = 0; i < tiers.length; i++) { if (seats >= tiers[i].seats) tierData = tiers[i]; else break; }
+  }
+  const grossArr = tierData ? tierData.arr : 0;
+  const netArr = Math.max(0, grossArr * (1 - discPct) - discDollar);
+  return { seats, discPct, discDollar, tierData, grossArr, netArr };
+}
+
+function updateCtdSaas() {
+  const { seats, netArr, tierData } = getCtdSaasData();
+  const arrEl = document.getElementById('ctdSaasArr');
+  const tierEl = document.getElementById('ctdSaasTier');
+  if (seats > 0 && tierData) {
+    arrEl.textContent = '$' + Math.round(netArr).toLocaleString();
+    tierEl.textContent = tierData.seats.toLocaleString() + ' seat tier · $' + (tierData.arr/tierData.seats/12).toFixed(2) + '/seat/mo';
+  } else {
+    arrEl.textContent = '—';
+    tierEl.textContent = 'Enter seats to calculate';
+  }
+  renderRenewalTab();
+}
+
+function renderRenewalTab() {
+  if (renewalPeriods.length === 0) return;
+
+  document.getElementById('renewalPeriodsSection').style.display = 'block';
+  document.getElementById('renewalSaasSection').style.display = 'block';
+  document.getElementById('renewalCompareSection').style.display = 'block';
+
+  // Periods table
+  let html = '';
+  renewalPeriods.forEach((p, idx) => {
+    const totals = [0,0,0,0,0,0,0,0];
+    Object.values(p.volumes).forEach(v => v.forEach((x,i) => totals[i]+=x));
+    html += `<tr>
+      <td><strong>${p.label}</strong><br><span style="font-size:10px;color:var(--text3);">${p.filename}</span></td>
+      <td>${p.seats > 0 ? p.seats.toLocaleString() : '—'}</td>
+      <td style="font-family:var(--mono);">${p.discount}%</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[0]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[1]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[2]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[4]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[5]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[6]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);">${totals[7]||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:600;">${p.totalActions.toLocaleString()}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text);">$${Math.round(p.totalSpend).toLocaleString()}</td>
+      <td><button onclick="removeRenewalPeriod(${idx})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;">✕</button></td>
+    </tr>`;
+  });
+  document.getElementById('renewalPeriodsBody').innerHTML = html;
+
+  // Comparison panel
+  const latest = renewalPeriods[renewalPeriods.length - 1];
+  const la = calcActions(landVolumes);
+  const lDisc = (parseFloat(document.getElementById('salesDiscount').value)||0)/100;
+  const lActNet = la.grossRev * (1 - lDisc);
+  const seats = parseInt(document.getElementById('seats').value)||0;
+  const tierData = (()=>{ let m=tiers[0]; for(let i=0;i<tiers.length;i++){if(seats>=tiers[i].seats)m=tiers[i];else break;} return m; })();
+  const saasArr = tierData ? tierData.arr * (1-(parseFloat(document.getElementById('salesDiscount').value)||0)/100) : 0;
+  const totalRenewalArr = saasArr + lActNet;
+
+  // Contract to Date — SAAS from dedicated inputs
+  const ctd = getCtdSaasData();
+  const ctdSaas = ctd.netArr;
+  const ctdTotalRev = ctdSaas + latest.totalSpend;
+  const ctdSaasCost = ctdSaas * (1 - 0.94); // 6% SAAS cost
+  // Action cost for CTD — use our cost tables with the uploaded volumes
+  const ctdActionsCalc = calcActions(latest.volumes || {});
+  const ctdActionCost = ctdActionsCalc.cost;
+  const ctdTotalCost = ctdSaasCost + ctdActionCost;
+  const ctdGM = ctdTotalRev > 0 ? (ctdTotalRev - ctdTotalCost) / ctdTotalRev : null;
+
+  // Renewal proposal margin
+  const renewalTotalCost = saasArr * (1 - 0.94) + la.cost;
+  const renewalGM = totalRenewalArr > 0 ? (totalRenewalArr - renewalTotalCost) / totalRenewalArr : null;
+
+  const fmtGM = v => v !== null ? (v*100).toFixed(1)+'%' : '—';
+  const gmColor = v => v === null ? 'var(--text3)' : v >= 0.70 ? 'var(--green)' : v >= 0.65 ? 'var(--yellow)' : 'var(--red)';
+
+  const row = (label, ctdVal, renewalVal, bold) => `
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:0;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text2);">${label}</span>
+      <span style="font-family:var(--mono);text-align:right;${bold?'font-weight:600;':''}">${ctdVal}</span>
+      <span style="font-family:var(--mono);text-align:right;${bold?'font-weight:600;':''}">${renewalVal}</span>
+    </div>`;
+
+  const compareHTML = `
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:0;font-size:11px;font-family:var(--mono);letter-spacing:0.5px;text-transform:uppercase;padding:0 0 8px 0;border-bottom:2px solid var(--border2);color:var(--text3);">
+      <span></span>
+      <span style="text-align:right;color:var(--text3);">${latest.label}</span>
+      <span style="text-align:right;color:var(--accent);">Renewal Proposal</span>
+    </div>
+    ${row('Seats', ctd.seats > 0 ? ctd.seats.toLocaleString() : '—', seats > 0 ? seats.toLocaleString() : '—')}
+    ${row('SAAS ARR', ctdSaas > 0 ? '$'+Math.round(ctdSaas).toLocaleString() : '—', saasArr > 0 ? '$'+Math.round(saasArr).toLocaleString() : '—')}
+    ${row('Action Spend / ARR', '$'+Math.round(latest.totalSpend).toLocaleString(), lActNet > 0 ? '$'+Math.round(lActNet).toLocaleString() : '—')}
+    ${row('Total Revenue', ctdTotalRev > 0 ? '$'+Math.round(ctdTotalRev).toLocaleString() : '—', '$'+Math.round(totalRenewalArr).toLocaleString(), true)}
+    ${row('SAAS Cost (6%)', ctdSaasCost > 0 ? '$'+Math.round(ctdSaasCost).toLocaleString() : '—', '$'+Math.round(saasArr * 0.06).toLocaleString())}
+    ${row('Action Cost', ctdActionCost > 0 ? '$'+Math.round(ctdActionCost).toLocaleString() : '—', '$'+Math.round(la.cost).toLocaleString())}
+    ${row('Total Cost', ctdTotalCost > 0 ? '$'+Math.round(ctdTotalCost).toLocaleString() : '—', '$'+Math.round(renewalTotalCost).toLocaleString(), true)}
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:0;font-size:13px;padding:10px 0 4px 0;">
+      <span style="font-family:var(--display);font-weight:700;color:var(--text);">Gross Margin</span>
+      <span style="font-family:var(--display);font-size:18px;font-weight:800;text-align:right;color:${gmColor(ctdGM)};">${fmtGM(ctdGM)}</span>
+      <span style="font-family:var(--display);font-size:18px;font-weight:800;text-align:right;color:${gmColor(renewalGM)};">${fmtGM(renewalGM)}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text3);padding-top:6px;">
+      CTD action cost uses current rate tables as best approximation (historical costs unavailable) · ${ctd.seats === 0 ? '⚠ Enter seats above to include SAAS in CTD margin' : ''}
+    </div>`;
+  document.getElementById('renewalCompareBody').innerHTML = compareHTML;
+
+  // Price GRI notes
+  const allMismatches = renewalPeriods.flatMap(p => p.priceMismatches);
+  if (allMismatches.length > 0) {
+    document.getElementById('renewalPriceSection').style.display = 'block';
+    let priceHtml = '';
+    allMismatches.forEach(m => {
+      const delta = m.calcPrice - m.filePrice;
+      const pct = ((delta / m.filePrice) * 100).toFixed(1);
+      priceHtml += `<tr>
+        <td>${m.country}</td>
+        <td>${m.label}</td>
+        <td style="text-align:right;font-family:var(--mono);">${m.sym||'$'}${m.filePrice} <span style="font-size:10px;color:var(--text3);">(2025)</span></td>
+        <td style="text-align:right;font-family:var(--mono);">${m.sym||'$'}${m.calcPrice} <span style="font-size:10px;color:var(--text3);">(Apr 1)</span></td>
+        <td style="text-align:right;font-family:var(--mono);color:${delta>0?'var(--green)':'var(--red)'};">${delta>0?'+':''}${pct}%</td>
+      </tr>`;
+    });
+    document.getElementById('renewalPriceBody').innerHTML = priceHtml;
+  } else {
+    document.getElementById('renewalPriceSection').style.display = 'none';
+  }
+}
+
+function removeRenewalPeriod(idx) {
+  renewalPeriods.splice(idx, 1);
+  if (renewalPeriods.length === 0) {
+    document.getElementById('renewalPeriodsSection').style.display = 'none';
+    document.getElementById('renewalCompareSection').style.display = 'none';
+    document.getElementById('renewalPriceSection').style.display = 'none';
+    document.getElementById('renewalSaasSection').style.display = 'none';
+  } else {
+    renderRenewalTab();
+  }
+}
+
+function clearRenewalPeriods() {
+  renewalPeriods = [];
+  document.getElementById('renewalPeriodsSection').style.display = 'none';
+  document.getElementById('renewalCompareSection').style.display = 'none';
+  document.getElementById('renewalPriceSection').style.display = 'none';
+  document.getElementById('renewalSaasSection').style.display = 'none';
+  document.getElementById('renewalUploadStatus').textContent = '';
 }
 
 function clearStorage() {
@@ -2404,6 +2873,10 @@ async function submitDeal() {
     priceOverrides: getOverriddenFields().length > 0 ? '⚠ PRICES OVERRIDDEN: ' + getOverriddenFields().join(', ') : 'Standard pricing',
     storageCost:    getTotalStorageCost() > 0 ? '$' + Math.round(getTotalStorageCost()).toLocaleString() + '/yr (' + countries.filter(c => getAnnualStorageCost(c.name) > 0).map(c => c.name + ': $' + Math.round(getAnnualStorageCost(c.name)).toLocaleString()).join(', ') + ')' : 'None',
     approvalStatus: document.getElementById('approvalTitle').textContent,
+    dealMode:       dealMode === 'renewal' ? 'Renewal' : 'New Deal',
+    renewalPeriods: dealMode === 'renewal' && renewalPeriods.length > 0
+      ? renewalPeriods.map(p => `${p.label} (${p.totalActions} actions, $${Math.round(p.totalSpend).toLocaleString()} spend, ${p.discount}% disc)`).join(' | ')
+      : '',
   };
 
   try {
