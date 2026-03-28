@@ -1,0 +1,3047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firstbase · Deal Margin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN SYSTEM
+============================================================ */
+:root {
+  --bg:          #F4F5F7;
+  --surface:     #FFFFFF;
+  --surface2:    #F0F1F4;
+  --surface3:    #E8EAEF;
+  --border:      #DDE0E8;
+  --border2:     #C8CDD9;
+  --text:        #030E24;
+  --text2:       #3D4760;
+  --text3:       #7C879E;
+  --accent:      #F46E73;
+  --accent-dim:  rgba(244,110,115,0.10);
+  --green:       #1a9e5c;
+  --green-dim:   rgba(26,158,92,0.10);
+  --yellow:      #d48f00;
+  --yellow-dim:  rgba(212,143,0,0.10);
+  --red:         #dc2626;
+  --red-dim:     rgba(220,38,38,0.10);
+  --blue:        #2563EB;
+  --blue-dim:    rgba(37,99,235,0.10);
+  --orange:      #e07020;
+  --sans:        'DM Sans', system-ui, sans-serif;
+  --mono:        'DM Mono', monospace;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --input-bg:    #EEF2FF;
+  --input-border:#B8C4E8;
+  --panel-tint:  #F0F3FB;
+  --panel-border:#D0D8F0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text);
+  font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--text);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 52px; gap: 20px;
+}
+.logo { font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,0.9);
+  letter-spacing: 1px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.logo-dot { color: var(--accent); }
+
+/* Mode tabs */
+.mode-tabs { display: flex; gap: 2px; background: rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 3px; }
+.mode-tab { font-family: var(--sans); font-size: 12px; font-weight: 500;
+  padding: 5px 16px; border-radius: 6px; border: none; cursor: pointer;
+  background: transparent; color: rgba(255,255,255,0.55); transition: all 0.15s; white-space: nowrap; }
+.mode-tab:hover { color: rgba(255,255,255,0.9); }
+.mode-tab.active.new { background: var(--blue); color: #fff; }
+.mode-tab.active.exp { background: var(--orange); color: #fff; }
+.mode-tab.active.ren { background: var(--accent); color: #fff; }
+
+/* Nav tabs */
+.nav-tabs { display: flex; gap: 1px; }
+.nav-tab { font-family: var(--sans); font-size: 12px; font-weight: 500;
+  padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
+  background: transparent; color: rgba(255,255,255,0.5); transition: all 0.15s; white-space: nowrap; }
+.nav-tab:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.08); }
+.nav-tab.active { color: #fff; background: rgba(255,255,255,0.12); }
+
+.header-right { display: flex; align-items: center; gap: 8px; }
+.sync-status { display: flex; align-items: center; gap: 5px; font-size: 11px;
+  color: rgba(255,255,255,0.45); white-space: nowrap; }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
+.sync-dot.ok { background: var(--green); }
+.sync-dot.loading { background: var(--yellow); animation: pulse 1.2s ease-in-out infinite; }
+.sync-dot.error { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── APPROVAL BANNER ── */
+.approval-banner {
+  margin: 14px 24px 0;
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.approval-banner.approved { background: var(--green-dim); border-color: var(--green); }
+.approval-banner.seek { background: var(--yellow-dim); border-color: var(--yellow); }
+.approval-banner.rejected { background: var(--red-dim); border-color: var(--red); }
+.approval-left { display: flex; align-items: center; gap: 14px; }
+.approval-icon { font-size: 22px; width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface3); font-weight: 700; }
+.approved .approval-icon { background: var(--green); color: #fff; }
+.seek .approval-icon { background: var(--yellow); color: #fff; }
+.rejected .approval-icon { background: var(--red); color: #fff; }
+.approval-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.approval-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.approval-gm { font-family: var(--mono); font-size: 28px; font-weight: 500;
+  color: var(--text3); }
+.approved .approval-gm { color: var(--green); }
+.seek .approval-gm { color: var(--yellow); }
+.rejected .approval-gm { color: var(--red); }
+.approval-meta { display: flex; gap: 20px; }
+.approval-stat { text-align: right; }
+.approval-stat-val { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }
+.approval-stat-key { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.thresh-row { display: flex; gap: 10px; align-items: center; }
+.thresh-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); }
+.thresh-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ── PAGES ── */
+.page { display: none; }
+.page.active { display: block; padding: 16px 24px 48px; }
+.two-col-page { display: none; }
+.two-col-page.active { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px 48px; }
+
+/* ── CARDS ── */
+.card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px; }
+.card-header { padding: 12px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--text);
+  text-transform: uppercase; letter-spacing: 0.5px; }
+.card-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.card-body { padding: 16px 18px; }
+
+/* ── METRICS ── */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  overflow: hidden; margin-bottom: 12px; }
+.metric-card { background: var(--surface); padding: 14px 16px; }
+.metric-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
+.metric-value { font-family: var(--mono); font-size: 19px; font-weight: 500;
+  color: var(--text); letter-spacing: -0.5px; }
+.metric-sub { font-size: 10px; color: var(--text3); margin-top: 3px;
+  font-family: var(--mono); }
+
+/* ── SCENARIOS ── */
+.scenarios-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.scenario-card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; }
+.scenario-title { font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.scenario-title.new { color: var(--blue); background: var(--blue-dim); }
+.scenario-title.exp { color: var(--orange); background: rgba(224,112,32,0.08); }
+.scenario-title.ren { color: var(--accent); background: var(--accent-dim); }
+.scenario-row { display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 16px; border-bottom: 1px solid var(--border); }
+.scenario-row:last-child { border-bottom: none; }
+.scenario-row.total { background: var(--surface2); font-weight: 600; }
+.scenario-row-label { font-size: 12px; color: var(--text2); }
+.scenario-row-val { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text); }
+.scenario-gm { padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.gm-big { font-family: var(--mono); font-size: 24px; font-weight: 500; }
+.gm-big.green { color: var(--green); }
+.gm-big.yellow { color: var(--yellow); }
+.gm-big.red { color: var(--red); }
+
+/* ── BREAKDOWN TABLE ── */
+.breakdown-wrap { overflow-x: auto; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); background: var(--surface); margin-bottom: 12px; }
+.breakdown-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.breakdown-table th { font-family: var(--mono); font-size: 9px; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--text3); padding: 9px 10px;
+  border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap;
+  background: var(--surface2); }
+.breakdown-table th:first-child { text-align: left; }
+.breakdown-table td { font-family: var(--mono); font-size: 11px; color: var(--text2);
+  padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+.breakdown-table td:first-child { text-align: left; font-family: var(--sans); font-size: 12px; }
+.breakdown-table tr:last-child td { border-bottom: none; }
+.breakdown-table .total-row td { font-weight: 600; background: var(--surface2); color: var(--text); }
+.margin-pill { display: inline-block; padding: 2px 7px; border-radius: 4px;
+  font-size: 10px; font-family: var(--mono); }
+.margin-pill.high { background: var(--green-dim); color: var(--green); }
+.margin-pill.mid { background: var(--yellow-dim); color: var(--yellow); }
+.margin-pill.low { background: var(--red-dim); color: var(--red); }
+
+/* ── FORM ── */
+.form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field.grow { flex: 1; min-width: 100px; }
+.field-label { font-size: 11px; font-weight: 500; color: var(--text2); }
+.field-hint { font-size: 10px; color: var(--text3); margin-top: 2px; }
+input[type="text"], input[type="number"], select, textarea {
+  font-family: var(--sans); font-size: 13px;
+  background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--input-border); border-radius: var(--radius);
+  padding: 7px 10px; width: 100%; transition: all 0.15s; outline: none; }
+input[type="text"]:focus, input[type="number"]:focus, select:focus {
+  border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px var(--blue-dim); }
+input[type="number"] { font-family: var(--mono); }
+.input-with-prefix { position: relative; }
+.input-with-prefix .prefix { position: absolute; left: 9px; top: 50%;
+  transform: translateY(-50%); font-family: var(--mono); font-size: 12px;
+  color: var(--text3); pointer-events: none; }
+.input-with-prefix input { padding-left: 22px; }
+.input-with-suffix { position: relative; }
+.input-with-suffix .suffix { position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%); font-family: var(--mono); font-size: 12px;
+  color: var(--text3); pointer-events: none; }
+.input-with-suffix input { padding-right: 28px; }
+.computed-val { font-family: var(--mono); font-size: 18px; font-weight: 500;
+  color: var(--text); padding: 6px 0; }
+.computed-sub { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+
+/* Tier badge */
+.tier-badge { display: inline-flex; align-items: center; gap: 5px;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  border-radius: 6px; padding: 3px 9px;
+  font-family: var(--mono); font-size: 11px; color: var(--accent); }
+
+/* Action discount badge */
+.act-disc-badge { display: inline-flex; align-items: center; gap: 5px;
+  background: var(--blue-dim); border: 1px solid rgba(37,99,235,0.25);
+  border-radius: 6px; padding: 3px 9px;
+  font-family: var(--mono); font-size: 11px; color: var(--blue); }
+
+/* ── ACTIONS TABLE ── */
+.actions-grid-title { font-size: 11px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px; padding: 0 0 10px; }
+.actions-table-wrap { overflow-x: auto; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); }
+.actions-table { width: 100%; border-collapse: collapse; }
+.actions-table th { font-family: var(--mono); font-size: 9px; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--text3); padding: 9px 8px;
+  border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap;
+  background: var(--surface2); }
+.actions-table th:first-child { text-align: left; min-width: 140px; }
+.actions-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+.actions-table tr:last-child td { border-bottom: none; }
+.actions-table td:first-child { text-align: left; font-size: 12px; color: var(--text2);
+  padding-left: 12px; }
+.action-col { width: 72px; }
+.tier-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.tier-dot.t1 { background: var(--accent); }
+.tier-dot.t2 { background: var(--orange); }
+.actions-table input[type="number"] { width: 64px; padding: 4px 6px; font-size: 12px;
+  text-align: right; background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 6px; }
+.actions-table input:focus { background: #fff; border-color: var(--blue); }
+
+/* Upload zone */
+.upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius);
+  padding: 18px; text-align: center; cursor: pointer; transition: all 0.15s;
+  background: var(--surface2); }
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--blue); background: var(--blue-dim); }
+.upload-zone.success { border-color: var(--green); border-style: solid; background: var(--green-dim); }
+.upload-zone-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 3px; }
+.upload-zone-sub { font-size: 11px; color: var(--text3); }
+
+/* ── STORAGE TABLE ── */
+.storage-table { width: 100%; border-collapse: collapse; }
+.storage-table th { font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text3); padding: 8px 10px;
+  border-bottom: 1px solid var(--border); text-align: right; background: var(--surface2); }
+.storage-table th:first-child { text-align: left; }
+.storage-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+.storage-table tr:last-child td { border-bottom: none; }
+.storage-table td:first-child { text-align: left; font-size: 12px; }
+.storage-table td:nth-child(odd) { color: var(--text3); font-family: var(--mono); font-size: 11px; }
+.storage-table input[type="number"] { width: 70px; padding: 4px 6px; font-size: 12px;
+  text-align: right; }
+
+/* ── SETTINGS ── */
+.settings-table { width: 100%; border-collapse: collapse; }
+.settings-table th { font-family: var(--mono); font-size: 9px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text3); padding: 8px 10px;
+  border-bottom: 1px solid var(--border); background: var(--surface2); text-align: left; }
+.settings-table td { font-family: var(--mono); font-size: 11px; color: var(--text2);
+  padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.settings-table tr:last-child td { border-bottom: none; }
+.settings-table input[type="number"] { width: 80px; padding: 3px 6px; font-size: 11px; }
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── BUTTONS ── */
+.btn { font-family: var(--sans); font-size: 12px; font-weight: 500;
+  padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text2); cursor: pointer;
+  transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
+  white-space: nowrap; }
+.btn:hover { background: var(--surface3); color: var(--text); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #e05a5f; }
+.btn-submit { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-submit:hover { background: #158a4e; }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text3); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text2); border-color: transparent; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+
+/* ── RENEWAL COLUMNS ── */
+.renewal-col { background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; }
+.renewal-col-header { padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; }
+.renewal-col-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.renewal-col-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.year-badge { font-family: var(--mono); font-size: 10px; font-weight: 500;
+  padding: 3px 9px; border-radius: 20px; background: var(--surface3); color: var(--text2); }
+.renewal-col-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.renewal-hero { background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: auto; }
+.renewal-metric-val { font-family: var(--mono); font-size: 20px; font-weight: 500;
+  color: var(--text); line-height: 1.1; }
+.renewal-metric-val.green { color: var(--green); }
+.renewal-metric-val.yellow { color: var(--yellow); }
+.renewal-metric-val.red { color: var(--red); }
+.renewal-metric-key { font-size: 10px; color: var(--text3); margin-top: 3px;
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
+.delta-badge { display: inline-flex; align-items: center;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  padding: 2px 8px; border-radius: 20px; }
+.delta-badge.up { background: var(--green-dim); color: var(--green); }
+.delta-badge.down { background: var(--red-dim); color: var(--red); }
+
+/* GRI Banner */
+.gri-banner { border: 1px solid var(--yellow); border-radius: var(--radius); overflow: hidden; }
+.gri-header { padding: 9px 14px; background: var(--yellow-dim);
+  display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.gri-title { font-size: 12px; font-weight: 500; color: var(--yellow); }
+.gri-table { width: 100%; border-collapse: collapse; }
+.gri-table th { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text3); padding: 7px 12px; border-bottom: 1px solid var(--border);
+  background: var(--surface2); text-align: left; font-family: var(--mono); }
+.gri-table td { font-family: var(--mono); font-size: 11px; color: var(--text2);
+  padding: 6px 12px; border-bottom: 1px solid var(--border); }
+.gri-table tr:last-child td { border-bottom: none; }
+.gri-change.up { color: var(--red); }
+.gri-change.down { color: var(--green); }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; z-index: 200;
+  background: rgba(3,14,36,0.5); display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); padding: 28px; width: 520px; max-width: 90vw;
+  transform: translateY(10px); transition: transform 0.2s; max-height: 85vh; overflow-y: auto; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 20px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+/* ── LOADING ── */
+.loading-overlay { position: fixed; inset: 0; z-index: 300; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+.loading-overlay.hidden { display: none; }
+.spinner { width: 28px; height: 28px; border: 2px solid var(--border2);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── MISC ── */
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+.flag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px;
+  padding: 2px 7px; border-radius: 4px; }
+.flag.warn { background: var(--yellow-dim); color: var(--yellow); }
+.flag.info { background: var(--blue-dim); color: var(--blue); }
+.hidden { display: none !important; }
+@media (max-width: 900px) {
+  .two-col-page.active { grid-template-columns: 1fr; }
+  .approval-meta { display: none; }
+  .metrics-row { grid-template-columns: 1fr 1fr; }
+}
+@media print {
+  .header { position: static; background: var(--text) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .header-right { display: none; }
+  .mode-tabs { display: none; }
+  .nav-tabs { display: none; }
+  .page { display: block !important; }
+  .two-col-page { display: grid !important; grid-template-columns: 1fr 1fr; }
+  .approval-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .margin-pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-size: 11px; }
+  .card { break-inside: avoid; }
+  .breakdown-wrap { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING (hidden immediately after boot) -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div style="font-size:12px;color:var(--text3);font-family:var(--mono);" id="loadingText">Loading…</div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="logo">FIRSTBASE <span class="logo-dot">·</span> DEAL MARGIN</div>
+    <div class="mode-tabs">
+      <button class="mode-tab new active" id="modeNew" onclick="setMode('new',this)">New Deal</button>
+      <button class="mode-tab exp" id="modeExp" onclick="setMode('exp',this)">Expansion</button>
+      <button class="mode-tab ren" id="modeRen" onclick="setMode('ren',this)">Renewal</button>
+    </div>
+    <nav class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" id="navCalc" onclick="showPage('calc',this)">Calculator</button>
+      <button class="nav-tab" id="navActions" onclick="showPage('actions',this)">Actions</button>
+      <button class="nav-tab" id="navStorage" onclick="showPage('storage',this)">Storage</button>
+      <button class="nav-tab" id="navSettings" onclick="showPage('settings',this)">Settings</button>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="sync-status">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span id="syncLabel">Syncing…</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="reloadData()" title="Refresh rate tables from Google Sheets">↻ Refresh</button>
+    <button class="btn btn-ghost btn-sm" onclick="copySnapshot()" title="Copy deal summary to clipboard">📋 Snapshot</button>
+    <button class="btn btn-ghost btn-sm" onclick="downloadPDF()" title="Print / Save as PDF">⬇ PDF</button>
+    <button class="btn btn-submit btn-sm" onclick="openSubmitModal()">Submit Deal</button>
+  </div>
+</header>
+
+<!-- APPROVAL BANNER -->
+<div class="approval-banner" id="approvalBanner">
+  <div class="approval-left">
+    <div class="approval-icon" id="approvalIcon">—</div>
+    <div>
+      <div class="approval-title" id="approvalTitle">Enter deal details</div>
+      <div class="approval-sub" id="approvalSub">Complete SAAS and action inputs to calculate margin</div>
+      <div id="approvalCustomer" style="font-size:11px;margin-top:2px;color:var(--text3);font-family:var(--mono);"></div>
+    </div>
+  </div>
+  <div class="approval-gm" id="approvalGM">—</div>
+  <div class="approval-meta" id="approvalMeta">
+    <div class="approval-stat">
+      <div class="approval-stat-val" id="metaSaasArr">—</div>
+      <div class="approval-stat-key">SAAS ARR</div>
+    </div>
+    <div class="approval-stat">
+      <div class="approval-stat-val" id="metaActArr">—</div>
+      <div class="approval-stat-key">Actions ARR</div>
+    </div>
+    <div class="approval-stat">
+      <div class="approval-stat-val" id="metaTotalArr">—</div>
+      <div class="approval-stat-key">Total ARR</div>
+    </div>
+  </div>
+  <div class="thresh-row">
+    <div class="thresh-item">
+      <div class="thresh-dot" style="background:var(--green)"></div>
+      <span>≥<input type="number" id="threshGreen" value="70" min="0" max="100"
+        style="width:34px;padding:2px 3px;font-size:11px;font-family:var(--mono);background:transparent;border:none;color:var(--text2);" oninput="recalc()">%</span>
+    </div>
+    <div class="thresh-item">
+      <div class="thresh-dot" style="background:var(--yellow)"></div>
+      <span>≥<input type="number" id="threshYellow" value="65" min="0" max="100"
+        style="width:34px;padding:2px 3px;font-size:11px;font-family:var(--mono);background:transparent;border:none;color:var(--text2);" oninput="recalc()">%</span>
+    </div>
+    <div class="thresh-item">
+      <div class="thresh-dot" style="background:var(--red)"></div>
+      <span id="threshRedLabel" style="font-size:11px;color:var(--text3);">&lt;65%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     CALCULATOR PAGE (shared by all modes via left/right panels)
+================================================================ -->
+<div class="page active" id="page-calc">
+
+  <!-- SAAS CARD -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">SAAS</div><div class="card-sub">Platform subscription pricing</div></div>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="field grow" style="max-width:240px;">
+          <div class="field-label">Customer Name</div>
+          <input type="text" id="customerName" placeholder="e.g. Acme Corp" oninput="recalc()">
+        </div>
+        <div class="field" style="max-width:160px;">
+          <div class="field-label">AE Name</div>
+          <input type="text" id="aeName" placeholder="Your name">
+        </div>
+        <div class="field" style="width:100px;">
+          <div class="field-label">Seats</div>
+          <input type="number" id="seats" placeholder="500" min="0" oninput="onSeatsChange()">
+        </div>
+        <div class="field" style="width:100px;">
+          <div class="field-label">Discount %</div>
+          <div class="input-with-suffix">
+            <input type="number" id="discPct" placeholder="0" min="0" max="100" step="0.5" oninput="recalc()">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="field" style="width:110px;">
+          <div class="field-label">Discount $</div>
+          <div class="input-with-prefix">
+            <span class="prefix">$</span>
+            <input type="number" id="discDollar" placeholder="0" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="field grow">
+          <div class="field-label">Implied SAAS ARR</div>
+          <div class="computed-val" id="saasArrDisplay">—</div>
+          <div class="computed-sub" id="saasTierLabel">Enter seats</div>
+        </div>
+        <div class="field" style="width:90px;">
+          <div class="field-label">$/Seat/Mo</div>
+          <div class="computed-val" style="font-size:16px;" id="pricePerSeat">—</div>
+        </div>
+      </div>
+      <!-- Tier badge + override -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <div id="tierBadge" class="tier-badge" style="display:none;"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="field-label">Override Tier?</span>
+          <select id="overrideTier" style="width:190px;font-size:12px;" onchange="onOverrideChange()">
+            <option value="no">No — Auto from seat count</option>
+            <option value="yes">Yes — Manual override</option>
+          </select>
+        </div>
+        <div id="tierOverrideField" style="display:none;">
+          <select id="tierOverrideSelect" style="width:240px;font-size:12px;" onchange="recalc()">
+            <option value="">— Select tier —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION DISCOUNT CARD -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Action Discount</div>
+      <div class="card-sub">Volume discount based on committed actions ARR</div></div>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="field">
+          <div class="field-label">Action Discount</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <select id="actDiscSel" style="width:210px;font-size:12px;" onchange="onActDiscChange()">
+              <option value="auto">Auto — from volume tier</option>
+            </select>
+            <div id="actDiscCustomWrap" style="display:none;align-items:center;gap:4px;">
+              <div class="input-with-suffix" style="width:90px;">
+                <input type="number" id="actDiscCustom" min="0" max="100" step="0.5"
+                  placeholder="0" style="font-family:var(--mono);"
+                  oninput="recalc()">
+                <span class="suffix">%</span>
+              </div>
+              <span class="flag warn" style="font-size:10px;">Off-tier</span>
+            </div>
+          </div>
+          <div class="computed-sub" id="actDiscLabel" style="margin-top:3px;">Based on actions ARR</div>
+        </div>
+        <div class="field grow">
+          <div class="field-label">Actions ARR (from Actions tab)</div>
+          <div class="computed-val" id="actionsArrDisplay">—</div>
+        </div>
+        <div id="actDiscBadgeWrap" style="display:none;align-self:flex-end;">
+          <div class="act-disc-badge" id="actDiscBadge"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS — metrics + breakdown -->
+  <div class="metrics-row" id="metricsRow">
+    <div class="metric-card">
+      <div class="metric-label">SAAS ARR</div>
+      <div class="metric-value" id="mSaasArr">—</div>
+      <div class="metric-sub" id="mSaasCost">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Actions ARR</div>
+      <div class="metric-value" id="mActArr">—</div>
+      <div class="metric-sub" id="mActDisc">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total ARR</div>
+      <div class="metric-value" id="mTotalArr">—</div>
+      <div class="metric-sub">Net of all discounts</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Blended GM%</div>
+      <div class="metric-value" id="mGM" style="font-size:24px;">—</div>
+      <div class="metric-sub" id="mGMSub">—</div>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN TABLE -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;">Action Breakdown</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text3);" id="breakdownTotalsBar"></div>
+  </div>
+  <div class="breakdown-wrap">
+    <table class="breakdown-table">
+      <thead>
+        <tr>
+          <th>Country</th>
+          <th>Onboards</th><th>Leavers</th><th>ITAD</th><th>Refreshes</th>
+          <th>Intakes</th><th>Expedited</th><th>Overnight</th><th>Lightweight</th>
+          <th>Total Actions</th><th>Net Rev</th><th>Margin</th>
+        </tr>
+      </thead>
+      <tbody id="breakdownBody">
+        <tr><td colspan="11" style="text-align:center;color:var(--text3);padding:20px;">
+          Add action volumes in the <strong>Actions</strong> tab to see country breakdown
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- STORAGE IMPACT (shows when storage entered) -->
+  <div id="storageImpactCard" style="display:none;" class="card">
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div class="card-title">📦 Storage Exceptions</div>
+        <div class="card-sub" id="storageImpactSub">Annual cost: —</div>
+      </div>
+      <div style="display:flex;gap:20px;text-align:right;">
+        <div>
+          <div class="metric-label">GM without storage</div>
+          <div class="metric-value" style="font-size:16px;" id="storageGMWithout">—</div>
+        </div>
+        <div>
+          <div class="metric-label">GM with storage</div>
+          <div class="metric-value" style="font-size:16px;" id="storageGMWith">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================
+     ACTIONS PAGE
+================================================================ -->
+<div class="page" id="page-actions">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Action Volumes</div>
+        <div class="card-sub">Enter expected annual volumes · Detailed order-level CSV upload supported</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <label class="btn btn-sm" style="cursor:pointer;">
+          ⬆ Upload CSV
+          <input type="file" id="csvUpload" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
+        </label>
+        <button class="btn btn-ghost btn-sm" id="editPricesBtn" onclick="togglePriceEdit()">✏ Edit Prices</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearActions()">✕ Clear</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Source indicator for Renewal mode -->
+      <div id="actionsSourceBadge" style="display:none;margin-bottom:8px;padding:8px 12px;background:var(--blue-dim);border:1px solid rgba(37,99,235,0.25);border-radius:var(--radius);font-size:11px;color:var(--blue);">
+        <span id="actionsSourceLabel"></span>
+        <span style="color:var(--text3);margin-left:6px;">— editing this tab updates the action breakdown on all modes</span>
+      </div>
+
+      <!-- Upload zone -->
+      <div class="upload-zone" id="uploadZone"
+        onclick="document.getElementById('csvUpload').click()"
+        ondragover="event.preventDefault();this.classList.add('dragover')"
+        ondragleave="this.classList.remove('dragover')"
+        ondrop="handleDrop(event)">
+        <div class="upload-zone-title" id="uploadTitle">Drop action-details CSV here or click to browse</div>
+        <div class="upload-zone-sub" id="uploadSub">Detailed order-level format (with Order ID column) · Standard Order = 1 per row · ITAD/Intake = Summary Qty</div>
+      </div>
+      <div style="margin-top:12px;" id="actLandTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     STORAGE PAGE
+================================================================ -->
+<div class="page" id="page-storage">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Storage Exceptions</div>
+        <div class="card-sub">Devices in storage per country · Rates in Settings &amp; Rates · Annual cost flows into margin</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearStorageVolumes()">✕ Clear</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="storage-table">
+        <thead><tr>
+          <th style="text-align:left;">Country</th>
+          <th style="text-align:center;">Laptops</th><th>$/mo</th>
+          <th style="text-align:center;">Peripherals</th><th>$/mo</th>
+          <th style="text-align:center;">Monitors</th><th>$/mo</th>
+          <th style="text-align:right;">Annual Cost</th>
+        </tr></thead>
+        <tbody id="storageBody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid var(--border);background:var(--surface2);">
+      <div class="metric-label">Total Annual Storage Cost</div>
+      <div class="metric-value" style="font-size:16px;color:var(--red);" id="storageTotalCost">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     RENEWAL / EXPANSION TWO-COLUMN PAGE
+================================================================ -->
+<div class="two-col-page" id="page-bimodal">
+
+  <!-- LEFT: Current -->
+  <div class="renewal-col" id="colLeft">
+    <div class="renewal-col-header">
+      <div>
+        <div class="renewal-col-title" id="colLeftTitle">Current Contract</div>
+        <div class="renewal-col-sub" id="colLeftSub">Upload CSV to populate from actuals</div>
+      </div>
+      <span class="year-badge" id="ctdYearBadge">—</span>
+    </div>
+    <div class="renewal-col-body">
+
+      <!-- CSV upload (Renewal only) / Manual (Expansion) -->
+      <div id="csvUploadSection">
+        <div class="field-label" style="margin-bottom:6px;" id="csvUploadLabel">Historical CSV</div>
+        <div class="upload-zone" id="renewalDropZone" style="padding:14px;"
+          onclick="document.getElementById('renewalCsvInput').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="handleRenewalDrop(event)">
+          <input type="file" id="renewalCsvInput" accept=".csv" multiple style="display:none;"
+            onchange="handleRenewalUpload(event)">
+          <div class="upload-zone-title" id="renewalUploadTitle">Drop GTM action-detail CSV(s)</div>
+          <div class="upload-zone-sub">Detailed order-level format</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:6px;" id="renewalUploadStatus"></div>
+      </div>
+
+      <!-- Customer + dates -->
+      <div class="form-row">
+        <div class="field grow">
+          <div class="field-label">Customer Name</div>
+          <input type="text" id="biCustomer" placeholder="e.g. Staffbase" oninput="renderBiHero()">
+        </div>
+        <div class="field" style="width:130px;" id="acqDateField">
+          <div class="field-label">Contract Start</div>
+          <input type="text" id="renewalAcqDate" placeholder="YYYY-MM-DD" oninput="renderBiHero()">
+        </div>
+      </div>
+
+      <!-- SAAS -->
+      <div>
+        <div class="field-label" style="margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;">SAAS — Current</div>
+        <div class="form-row">
+          <div class="field" style="width:85px;">
+            <div class="field-label">Seats</div>
+            <input type="number" id="ctdSeats" placeholder="0" oninput="renderBiHero()">
+          </div>
+          <div class="field" style="width:85px;">
+            <div class="field-label">Disc %</div>
+            <div class="input-with-suffix">
+              <input type="number" id="ctdDiscPct" placeholder="0" min="0" max="100" oninput="renderBiHero()">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field" style="width:95px;">
+            <div class="field-label">Disc $</div>
+            <div class="input-with-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="ctdDiscDollar" placeholder="0" min="0" oninput="renderBiHero()">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+          <div class="computed-val" style="font-size:15px;" id="ctdSaasArr">—</div>
+          <div style="font-size:11px;color:var(--text3);" id="ctdSaasPerSeat"></div>
+        </div>
+      </div>
+
+      <!-- Action volumes (from CSV) -->
+      <div>
+        <div class="field-label" style="margin-bottom:5px;">Action Volumes</div>
+        <div id="ctdVolSummary" style="display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:11px;color:var(--text3);">Upload CSV to populate</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <div style="font-size:11px;color:var(--text2);">Action Disc:</div>
+          <div class="computed-val" style="font-size:14px;" id="ctdActDisc">—</div>
+        </div>
+      </div>
+
+      <!-- Hero -->
+      <div class="renewal-hero" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div>
+          <div class="renewal-metric-val" id="ctdTotalArr">—</div>
+          <div class="renewal-metric-key">Total ARR</div>
+        </div>
+        <div>
+          <div class="renewal-metric-val" id="ctdSaasArrHero">—</div>
+          <div class="renewal-metric-key">SAAS ARR</div>
+        </div>
+        <div>
+          <div class="renewal-metric-val" id="ctdActArrHero">—</div>
+          <div class="renewal-metric-key">Actions ARR</div>
+        </div>
+        <div>
+          <div class="renewal-metric-val" id="ctdGM">—</div>
+          <div class="renewal-metric-key">GM%</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: Proposed -->
+  <div class="renewal-col" id="colRight">
+    <div class="renewal-col-header">
+      <div>
+        <div class="renewal-col-title" id="colRightTitle">Renewal Proposal</div>
+        <div class="renewal-col-sub">Editable — pre-filled from current</div>
+      </div>
+      <span class="year-badge" id="propYearBadge" style="background:var(--accent-dim);color:var(--accent);">—</span>
+    </div>
+    <div class="renewal-col-body">
+
+      <!-- Forecast CSV upload (Renewal only, hidden in Expansion) -->
+      <div id="propCsvSection" style="display:none;">
+        <div class="field-label" style="margin-bottom:6px;" id="propCsvLabel">Forecast CSV</div>
+        <div class="upload-zone" id="propDropZone" style="padding:14px;"
+          onclick="document.getElementById('propCsvInput').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="handlePropDrop(event)">
+          <input type="file" id="propCsvInput" accept=".csv" style="display:none;"
+            onchange="handlePropUpload(event)">
+          <div class="upload-zone-title" id="propUploadTitle">Drop AE forecast CSV here</div>
+          <div class="upload-zone-sub">Ping Identity format: Country + Expected New Hires + Leavers + Refreshes</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:6px;" id="propUploadStatus"></div>
+      </div>
+
+      <!-- SAAS -->
+      <div>
+        <div class="field-label" style="margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;">SAAS — Proposed</div>
+        <div class="form-row">
+          <div class="field" style="width:85px;">
+            <div class="field-label">Seats</div>
+            <input type="number" id="propSeats" placeholder="0" oninput="renderBiHero()">
+          </div>
+          <div class="field" style="width:85px;">
+            <div class="field-label">Disc %</div>
+            <div class="input-with-suffix">
+              <input type="number" id="propDiscPct" placeholder="0" min="0" max="100" oninput="renderBiHero()">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field" style="width:95px;">
+            <div class="field-label">Disc $</div>
+            <div class="input-with-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="propDiscDollar" placeholder="0" min="0" oninput="renderBiHero()">
+            </div>
+          </div>
+        </div>
+        <!-- Tier override -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+          <div class="computed-val" style="font-size:15px;" id="propSaasArr">—</div>
+          <div style="font-size:11px;color:var(--text3);" id="propSaasPerSeat"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+          <div id="propTierBadge" class="tier-badge" style="display:none;"></div>
+          <select id="propOverrideTier" style="width:160px;font-size:11px;" onchange="onPropOverrideChange()">
+            <option value="no">No — Auto tier</option>
+            <option value="yes">Yes — Override</option>
+          </select>
+          <div id="propTierOverrideWrap" style="display:none;">
+            <select id="propTierOverrideSel" style="width:200px;font-size:11px;" onchange="renderBiHero()">
+              <option value="">— Select —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Discount -->
+      <div>
+        <div class="field-label" style="margin-bottom:4px;">Action Discount</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <select id="propActDiscSel" style="width:200px;font-size:12px;" onchange="onPropActDiscChange()">
+            <option value="auto">Auto — from volume tier</option>
+          </select>
+          <div id="propActDiscCustomWrap" style="display:none;align-items:center;gap:4px;">
+            <div class="input-with-suffix" style="width:90px;">
+              <input type="number" id="propActDiscCustom" min="0" max="100" step="0.5"
+                placeholder="0" style="font-family:var(--mono);"
+                oninput="renderBiHero()">
+              <span class="suffix">%</span>
+            </div>
+            <span class="flag warn" style="font-size:10px;">Off-tier</span>
+          </div>
+          <div id="propDiscMismatch" class="flag warn hidden">⚠ Differs from current</div>
+        </div>
+        <div id="propActDiscBadge" class="act-disc-badge" style="display:none;margin-top:4px;"></div>
+      </div>
+
+      <!-- Action volumes editable -->
+      <div>
+        <div class="field-label" style="margin-bottom:5px;">Action Volumes (Annual)</div>
+        <div id="propVolSummary" style="display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:11px;color:var(--text3);">Pre-fills from CSV upload</div>
+        </div>
+      </div>
+
+      <!-- Hero -->
+      <div class="renewal-hero" style="background:var(--surface3);grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div>
+          <div class="renewal-metric-val" id="propTotalArr">—</div>
+          <div class="renewal-metric-key">Total ARR</div>
+        </div>
+        <div>
+          <div class="renewal-metric-val" id="propSaasArrHero">—</div>
+          <div class="renewal-metric-key">SAAS ARR</div>
+        </div>
+        <div>
+          <div class="renewal-metric-val" id="propActArrHero">—</div>
+          <div class="renewal-metric-key">Actions ARR</div>
+        </div>
+        <div>
+          <div class="renewal-metric-val" id="propGM">—</div>
+          <div class="renewal-metric-key">GM%</div>
+        </div>
+      </div>
+
+      <!-- Delta -->
+      <div id="deltaRow" style="display:none;gap:6px;align-items:center;">
+        <span style="font-size:11px;color:var(--text3);">vs Current →</span>
+        <span class="delta-badge flat" id="deltaArr">—</span>
+        <span class="delta-badge flat" id="deltaGM">—</span>
+      </div>
+
+    </div>
+
+    <!-- GRI banner -->
+    <div class="gri-banner hidden" id="griBanner" style="margin:0 16px 16px;">
+      <div class="gri-header" onclick="toggleGri()">
+        <span class="gri-title" id="griTitle">⚠ Price changes since last contract</span>
+        <span style="font-size:11px;color:var(--text3);" id="griToggle">Show ▼</span>
+      </div>
+      <div style="display:none;" id="griBannerBody">
+        <table class="gri-table">
+          <thead><tr><th>Country</th><th>Action</th><th>Historical</th><th>New Rate</th><th>Δ</th></tr></thead>
+          <tbody id="griBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ================================================================
+     SETTINGS PAGE
+================================================================ -->
+<div class="page" id="page-settings">
+  <div class="settings-grid">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">FX Rates</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFxRates()">Reset</button>
+      </div>
+      <div class="card-body" id="fxInputsContainer"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Rate Card Source</div></div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <div class="field-label">Submit URL (Apps Script)</div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <input type="text" id="submitUrlInput" placeholder="Apps Script Web App URL" style="font-size:11px;">
+            <button class="btn btn-sm" onclick="saveSubmitUrl()">Save</button>
+            <button class="btn btn-sm" onclick="testSubmitUrl()">Test</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:4px;" id="submitUrlStatus"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="grid-column:1/-1;">
+      <div class="card-header">
+        <div><div class="card-title">Seat Tiers</div></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="settings-table">
+          <thead><tr><th>Seats</th><th>List ARR</th><th>$/Seat/Yr</th><th>$/Seat/Mo</th></tr></thead>
+          <tbody id="tiersBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Action Discount Tiers</div></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="settings-table">
+          <thead><tr><th>Min Actions ARR</th><th>Discount %</th></tr></thead>
+          <tbody id="discBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Country Rate Card</div></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="settings-table">
+          <thead><tr><th>Country</th><th>Cur</th><th>Order</th><th>Return</th><th>ITAD</th><th>Refresh</th><th>Intake</th><th>Expedited</th><th>Lightweight</th></tr></thead>
+          <tbody id="rateCardBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="grid-column:1/-1;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Storage Rates by Country ($/device/mo)</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetStorageRates()">↺ Reset</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="settings-table">
+          <thead><tr><th>Country</th><th>Laptop</th><th>Peripheral</th><th>Monitor</th></tr></thead>
+          <tbody id="storageRatesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SUBMIT MODAL
+================================================================ -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-title">Submit Deal</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="field">
+        <div class="field-label">AE Name</div>
+        <input type="text" id="modalAe" placeholder="Your name">
+      </div>
+      <div class="field" id="exceptionGroup" style="display:none;">
+        <div class="field-label">Exception Reason <span style="color:var(--red);">*</span>
+          <span style="font-size:10px;color:var(--text3);font-weight:400;"> — Required (deal below threshold)</span></div>
+        <input type="text" id="exceptionReason" placeholder="e.g. Strategic account, competitive pressure…">
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Deal Summary</div>
+        <div id="submitSummary" style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.8;white-space:pre-wrap;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSubmitModal()">Cancel</button>
+      <button class="btn btn-submit" id="submitBtn" onclick="submitDeal()">Submit Deal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const SHEET_ID           = '1tjWr5LWUF-6ea5h8t6qDFxG1YnDsOO4ZEWUb3WeGhhY';
+const GID_EMPLOYEE_TIERS = '130612450';
+const GID_ACTION_DISCOUNT= '55584018';
+const GID_STEP2_PRICES   = '1082224277';
+const GID_COSTSV2        = '1355855915';
+const SAAS_MARGIN        = 0.94;
+
+const ACTION_LABELS  = ['Onboards','Leavers','ITAD','Refreshes','Intakes','Expedited','Overnight','Lightweight'];
+const ACTION_PRICE_IDX = [0,4,5,6,7,1,2,3];
+const ACTION_COST_IDX  = [0,4,5,6,7,1,2,3];
+
+// Bulk action types — count Summary Qty (no Order ID rows)
+const BULK_ACTION_TYPES = new Set([
+  'itad processing','itad return','intake','imaging',
+]);
+
+const FALLBACK_TIERS = [
+  {seats:50,arr:10000},{seats:100,arr:17500},{seats:200,arr:30000},{seats:350,arr:50000},
+  {seats:500,arr:60000},{seats:750,arr:80000},{seats:1000,arr:100000},{seats:1500,arr:140000},
+  {seats:2500,arr:225000},{seats:5000,arr:400000},{seats:7500,arr:575000},
+  {seats:10000,arr:725000},{seats:15000,arr:1035000},{seats:20000,arr:1200000},
+  {seats:30000,arr:1650000},{seats:40000,arr:1800000},{seats:50000,arr:2000000}
+];
+
+const FALLBACK_ACTION_DISCOUNTS = [
+  {minArr:0,discount:0},{minArr:10001,discount:0.10},{minArr:25001,discount:0.15},
+  {minArr:50001,discount:0.20},{minArr:75001,discount:0.23},{minArr:100001,discount:0.25},
+  {minArr:175001,discount:0.275},{minArr:250001,discount:0.30},{minArr:375001,discount:0.32},
+  {minArr:500001,discount:0.35},{minArr:1000001,discount:0.35}
+];
+
+const FALLBACK_COUNTRIES = [
+  {name:'U.S. (USD)',        tier:1,currency:'USD',prices:[105,350,450,25,219,100,324,150],  costs:[30,50,70,15,105,70,100,40]},
+  {name:'U.K. (GBP)',        tier:1,currency:'GBP',prices:[105,325,null,25,250,120,355,150], costs:[42,50,null,20,130,85,132,50]},
+  {name:'E.U. (EUR)',        tier:1,currency:'EUR',prices:[130,487.5,null,37.5,250,120,380,150],costs:[120,135,null,60,250,95,231,90]},
+  {name:'Canada (CAD)',      tier:1,currency:'CAD',prices:[185,null,null,110,395,300,580,250],costs:[121,135,null,65,318,220,351,105]},
+  {name:'India (USD)',       tier:1,currency:'USD',prices:[125,null,null,100,313,160,438,150],costs:[85,null,null,85,150,120,120,37]},
+  {name:'Singapore (USD)',   tier:2,currency:'USD',prices:[150,null,null,100,181,160,331,150],costs:[80,null,null,80,102,75,75,57]},
+  {name:'Mexico (USD)',      tier:2,currency:'USD',prices:[205,null,null,100,220,165,425,150],costs:[66,null,null,66,63,45,45,47]},
+  {name:'Israel (USD)',      tier:2,currency:'USD',prices:[195,null,null,100,219,165,414,150],costs:[130,null,null,130,177,115,115,77]},
+  {name:'Brazil (USD)',      tier:2,currency:'USD',prices:[410,null,null,100,400,260,810,150],costs:[181,null,null,181,171,250,250,59]},
+  {name:'Australia (USD)',   tier:2,currency:'USD',prices:[185,null,null,100,350,250,535,250],costs:[60,null,null,60,163,120,120,120]},
+  {name:'Argentina (USD)',   tier:2,currency:'USD',prices:[360,null,null,100,300,225,660,150],costs:[80,null,null,80,77,220,220,47]},
+  {name:'Japan (USD)',       tier:2,currency:'USD',prices:[230,null,null,100,250,220,480,200],costs:[93,null,null,93,152,200,200,107]},
+  {name:'Philippines (USD)', tier:2,currency:'USD',prices:[230,null,null,100,250,200,480,150],costs:[109,null,null,109,139,105,105,62]},
+  {name:'Colombia (USD)',    tier:2,currency:'USD',prices:[295,null,null,100,320,240,615,150],costs:[75,null,null,75,63,300,300,47]},
+  {name:'Guatemala (USD)',   tier:2,currency:'USD',prices:[335,null,null,100,350,300,685,180],costs:[150,null,null,150,200,150,150,91]},
+  {name:'Malaysia (USD)',    tier:2,currency:'USD',prices:[130,null,null,100,200,150,330,150],costs:[38,null,null,38,96,70,70,51]},
+  {name:'Costa Rica (USD)',  tier:2,currency:'USD',prices:[235,null,null,100,250,190,485,180],costs:[122,null,null,122,64,50,50,47]},
+  {name:'UAE (USD)',         tier:2,currency:'USD',prices:[230,null,null,100,300,225,530,170],costs:[100,null,null,100,165,125,125,85]},
+  {name:'South Korea (USD)', tier:2,currency:'USD',prices:[175,null,null,100,365,275,540,300],costs:[74,null,null,74,201,150,150,166]},
+  {name:'New Zealand (USD)', tier:2,currency:'USD',prices:[120,null,null,100,250,190,370,170],costs:[28,null,null,28,85,65,65,67]},
+  {name:'Chile (USD)',       tier:2,currency:'USD',prices:[260,null,null,100,325,245,585,150],costs:[118,null,null,118,103,300,300,39]},
+];
+
+const FALLBACK_STORAGE_RATES = {
+  'U.S. (USD)':        [0,0,0],
+  'U.K. (GBP)':        [0,0,0],
+  'E.U. (EUR)':        [0,0,0],
+  'Canada (CAD)':      [0,0,0],
+  'India (USD)':       [0,0,0],
+  'Singapore (USD)':   [10,10,10],
+  'Mexico (USD)':      [12,2,12],
+  'Israel (USD)':      [10,10,10],
+  'Brazil (USD)':      [24,3,24],
+  'Australia (USD)':   [19.5,19.5,19.5],
+  'Argentina (USD)':   [12,2,12],
+  'Japan (USD)':       [6,2,8],
+  'Philippines (USD)': [6.5,1.08,16.25],
+  'Colombia (USD)':    [16,2,16],
+  'Guatemala (USD)':   [24,3,24],
+  'Malaysia (USD)':    [2.2,2.2,2.2],
+  'Costa Rica (USD)':  [24,3,24],
+  'UAE (USD)':         [10,3,10],
+  'South Korea (USD)': [14,14,14],
+  'New Zealand (USD)': [3,3,3],
+  'Chile (USD)':       [18,18,18],
+};
+
+const REGION_NAME_MAP = {
+  'united states':'U.S. (USD)','us':'U.S. (USD)','united states of america':'U.S. (USD)','usa':'U.S. (USD)',
+  'united kingdom':'U.K. (GBP)','uk':'U.K. (GBP)','england':'U.K. (GBP)',
+  'europe':'E.U. (EUR)','eu':'E.U. (EUR)','sweden':'E.U. (EUR)','germany':'E.U. (EUR)',
+  'france':'E.U. (EUR)','netherlands':'E.U. (EUR)','ireland':'E.U. (EUR)',
+  'australia':'Australia (USD)','au':'Australia (USD)',
+  'canada':'Canada (CAD)','ca':'Canada (CAD)',
+  'india':'India (USD)','in':'India (USD)',
+  'singapore':'Singapore (USD)','sg':'Singapore (USD)',
+  'mexico':'Mexico (USD)','mx':'Mexico (USD)',
+  'brazil':'Brazil (USD)','br':'Brazil (USD)',
+  'israel':'Israel (USD)','il':'Israel (USD)',
+  'united arab emirates':'UAE (USD)','uae':'UAE (USD)','ae':'UAE (USD)',
+  'japan':'Japan (USD)','jp':'Japan (USD)',
+  'philippines':'Philippines (USD)','ph':'Philippines (USD)',
+  'south korea':'South Korea (USD)','korea':'South Korea (USD)','kr':'South Korea (USD)',
+  'korea, republic of':'South Korea (USD)','republic of korea':'South Korea (USD)',
+  'new zealand':'New Zealand (USD)','nz':'New Zealand (USD)',
+  'argentina':'Argentina (USD)','ar':'Argentina (USD)',
+  'guatemala':'Guatemala (USD)','gt':'Guatemala (USD)',
+  'malaysia':'Malaysia (USD)','my':'Malaysia (USD)',
+  'costa rica':'Costa Rica (USD)','cr':'Costa Rica (USD)',
+  'colombia':'Colombia (USD)','co':'Colombia (USD)',
+  'chile':'Chile (USD)','cl':'Chile (USD)',
+};
+
+const REGION_CODE_MAP = {
+  'US':'U.S. (USD)','GB':'U.K. (GBP)','UK':'U.K. (GBP)','DE':'E.U. (EUR)',
+  'FR':'E.U. (EUR)','NL':'E.U. (EUR)','SE':'E.U. (EUR)','IE':'E.U. (EUR)',
+  'AU':'Australia (USD)','CA':'Canada (CAD)','IN':'India (USD)','SG':'Singapore (USD)',
+  'MX':'Mexico (USD)','BR':'Brazil (USD)','IL':'Israel (USD)','AE':'UAE (USD)',
+  'JP':'Japan (USD)','PH':'Philippines (USD)','KR':'South Korea (USD)',
+  'NZ':'New Zealand (USD)','AR':'Argentina (USD)','GT':'Guatemala (USD)',
+  'MY':'Malaysia (USD)','CR':'Costa Rica (USD)','CO':'Colombia (USD)','CL':'Chile (USD)',
+};
+
+const ACTION_TYPE_MAP = {
+  'standard order':0,'standard return':1,'itad return':2,'itad processing':2,
+  'imaging':2,'intake':4,'standard expedited order':5,
+  'overnight expedited order shipping':6,'overnight order':6,
+  'lightweight order':7,'lightweight expedited order':7,
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let tiers = FALLBACK_TIERS;
+let actionDiscounts = FALLBACK_ACTION_DISCOUNTS;
+let countries = FALLBACK_COUNTRIES;
+let storageRates = JSON.parse(JSON.stringify(FALLBACK_STORAGE_RATES));
+let storageVolumes = {};
+let landVolumes = {};
+let priceOverrides = {};
+let priceEditMode = false;
+let FX_RATES = {USD:1,GBP:1.27,EUR:1.08,CAD:0.74,AUD:0.65,MYR:0.22,NZD:0.60};
+let SUBMIT_URL = '';
+let currentMode = 'new'; // 'new','exp','ren'
+let renewalPeriods = []; // [{period, volumes, csvRevenue, detectedDiscount}]
+let propForecastVolumes = {}; // populated from forecast CSV upload on right side
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  SUBMIT_URL = localStorage.getItem('fb_submit_url') || '';
+  document.getElementById('submitUrlInput').value = SUBMIT_URL;
+
+  // Boot instantly with fallback data — no blocking
+  countries.forEach(c => {
+    storageVolumes[c.name] = {laptops:0,peripherals:0,monitors:0};
+    landVolumes[c.name] = [0,0,0,0,0,0,0,0];
+  });
+  renderFxInputs();
+  buildActionsTable();
+  buildTierSelect();
+  populateActDiscDropdown(0);
+  renderSettingsTables();
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  recalc();
+
+  // Fetch live sheet data silently in background
+  reloadData();
+});
+
+// ============================================================
+// DATA LOADING
+// ============================================================
+function csvUrl(gid) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${gid}&single=true&output=csv`;
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let cur='', inQ=false, row=[];
+  text = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  for (let i=0; i<text.length; i++) {
+    const ch=text[i];
+    if (ch==='"') { if(inQ&&text[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
+    else if (ch===','&&!inQ) { row.push(cur.trim());cur=''; }
+    else if (ch==='\n'&&!inQ) { row.push(cur.trim());cur='';if(row.some(c=>c!==''))rows.push(row);row=[]; }
+    else if (ch==='\n'&&inQ) { cur+=' '; }
+    else cur+=ch;
+  }
+  if(cur.trim()||row.length){row.push(cur.trim());if(row.some(c=>c!==''))rows.push(row);}
+  return rows;
+}
+
+function cleanNum(s) {
+  if(!s) return null;
+  const n=parseFloat((s+'').replace(/[$£€,RM%\s]/g,''));
+  return isNaN(n)?null:n;
+}
+
+async function reloadData() {
+  const btn=document.getElementById('refreshBtn');
+  if(btn){btn.textContent='↻ Syncing…';btn.disabled=true;}
+  setSyncState('loading','Syncing…');
+  // 5 second timeout per fetch — don't hang forever
+  const fetchWithTimeout=(url,ms=5000)=>Promise.race([
+    fetch(url).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(parseCSV),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))
+  ]);
+  try {
+    const [tr,dr,pr,cr] = await Promise.all([
+      fetchWithTimeout(csvUrl(GID_EMPLOYEE_TIERS)),
+      fetchWithTimeout(csvUrl(GID_ACTION_DISCOUNT)),
+      fetchWithTimeout(csvUrl(GID_STEP2_PRICES)),
+      fetchWithTimeout(csvUrl(GID_COSTSV2)),
+    ]);
+    loadTiers(tr); loadDiscounts(dr); loadPricesCosts(pr,cr);
+    // Re-init any new countries without wiping existing user data
+    countries.forEach(c => {
+      if(!storageVolumes[c.name]) storageVolumes[c.name]={laptops:0,peripherals:0,monitors:0};
+      if(!landVolumes[c.name]) landVolumes[c.name]=[0,0,0,0,0,0,0,0];
+    });
+    buildTierSelect();
+    buildActionsTable();
+    populateActDiscDropdown(0);
+    renderSettingsTables();
+    setSyncState('ok','Live');
+    recalc();
+  } catch(e) {
+    console.warn('Sheet fetch failed, using fallback:', e);
+    setSyncState('error','Fallback data');
+  }
+  if(btn){btn.textContent='↻ Refresh';btn.disabled=false;}
+}
+
+function loadTiers(rows) {
+  const r=[];
+  for(let i=1;i<rows.length;i++){const s=cleanNum(rows[i][1]),a=cleanNum(rows[i][2]);if(s&&a)r.push({seats:s,arr:a});}
+  if(r.length>0) tiers=r;
+}
+function loadDiscounts(rows) {
+  const r=[];
+  for(let i=3;i<rows.length;i++){const m=cleanNum(rows[i][3]),d=cleanNum(rows[i][4]);if(m!==null&&d!==null)r.push({minArr:m,discount:d/100});}
+  if(r.length>0) actionDiscounts=r;
+}
+function loadPricesCosts(pr,cr) {
+  const gc=r=>[cleanNum(r[15]),cleanNum(r[16]),cleanNum(r[17]),cleanNum(r[18]),cleanNum(r[19]),cleanNum(r[20]),cleanNum(r[21]),cleanNum(r[22])];
+  const nc=[];
+  for(let i=4;i<pr.length;i++){
+    const p=pr[i],c=cr[i]||[],n=p[2];
+    if(!n||!n.trim()) continue;
+    const match=FALLBACK_COUNTRIES.find(fc=>fc.name.includes(n.trim())||n.trim().includes(fc.name.split(' ')[0]));
+    if(!match) continue;
+    const prices=gc(p),costs=gc(c);
+    nc.push({...match,prices:prices.map((v,i)=>v!==null?v:match.prices[i]),costs:costs.map((v,i)=>v!==null?v:match.costs[i])});
+  }
+  if(nc.length>0) countries=nc;
+}
+
+function setSyncState(state, label) {
+  document.getElementById('syncDot').className='sync-dot '+state;
+  document.getElementById('syncLabel').textContent=label;
+}
+
+// ============================================================
+// LOOKUPS
+// ============================================================
+function lookupTier(seats) {
+  let m=tiers[0];
+  for(const t of tiers){if(seats>=t.seats)m=t;else break;}
+  return m;
+}
+
+function getActiveTier(seats) {
+  if(document.getElementById('overrideTier')?.value==='yes'){
+    const sel=document.getElementById('tierOverrideSelect');
+    if(sel?.value){const t=tiers.find(t=>t.seats===parseInt(sel.value));if(t)return t;}
+  }
+  return seats?lookupTier(seats):null;
+}
+
+function lookupDiscount(grossArr) {
+  let m=actionDiscounts[0];
+  for(const d of actionDiscounts){if(grossArr>=d.minArr)m=d;else break;}
+  return m.discount;
+}
+
+function getFX() { return FX_RATES; }
+
+// ============================================================
+// MAIN RECALC
+// ============================================================
+function recalc() {
+  const seats    = parseInt(document.getElementById('seats').value)||0;
+  const discPct  = parseFloat(document.getElementById('discPct').value)||0;
+  const discDol  = parseFloat(document.getElementById('discDollar').value)||0;
+  const threshG  = parseFloat(document.getElementById('threshGreen').value)||70;
+  const threshY  = parseFloat(document.getElementById('threshYellow').value)||65;
+  const customer = document.getElementById('customerName').value||'';
+
+  // SAAS
+  const tier    = getActiveTier(seats);
+  const isOvr   = document.getElementById('overrideTier').value==='yes';
+  const tierPPS = tier ? tier.arr/tier.seats/12 : 0;
+  const listArr = tier ? (isOvr&&seats ? tierPPS*seats*12 : tier.arr) : 0;
+  const saasArr = tier ? Math.max(0, listArr*(1-discPct/100)-discDol) : 0;
+  const saasCost= saasArr*(1-SAAS_MARGIN);
+  const pps     = seats&&saasArr ? saasArr/seats/12 : 0;
+
+  document.getElementById('saasArrDisplay').textContent = saasArr ? fmt(saasArr) : '—';
+  document.getElementById('saasTierLabel').textContent  = tier
+    ? (isOvr ? `Override: ${fmt(tierPPS*12)}/seat/yr × ${seats.toLocaleString()} seats`
+             : `Tier: ${tier.seats.toLocaleString()} seats · List ${fmt(tier.arr)}`)
+    : 'Enter seats to calculate';
+  document.getElementById('pricePerSeat').textContent   = pps ? `$${pps.toFixed(2)}` : '—';
+
+  // Tier badge
+  const badge=document.getElementById('tierBadge');
+  if(tier){
+    badge.textContent = isOvr
+      ? `$${tierPPS.toFixed(2)}/seat/mo · ${tier.seats.toLocaleString()}+ rate`
+      : `${fmt(tier.arr)}/yr · $${tierPPS.toFixed(2)}/seat/mo`;
+    badge.style.display='inline-flex';
+  } else badge.style.display='none';
+
+  // Actions
+  const fx = getFX();
+  const actResult = calcActionsResult(fx);
+  const grossActArr = actResult.grossRev;
+  const lDisc = getSelectedActDisc(grossActArr);
+  const actNet = actResult.grossRev * (1-lDisc);
+  const actCost= actResult.cost;
+
+  // Update act disc dropdown
+  populateActDiscDropdown(grossActArr ? lookupDiscount(grossActArr)*100 : 0);
+  document.getElementById('actDiscLabel').textContent = grossActArr
+    ? `Qualified: ${(lookupDiscount(grossActArr)*100).toFixed(1)}% · ${fmt(grossActArr)} gross ARR`
+    : 'Based on actions ARR';
+  document.getElementById('actionsArrDisplay').textContent = actNet ? fmt(actNet) : '—';
+  if(grossActArr){
+    document.getElementById('actDiscBadgeWrap').style.display='block';
+    document.getElementById('actDiscBadge').textContent = `${fmt(grossActArr)} → ${(lDisc*100).toFixed(1)}% off`;
+  } else document.getElementById('actDiscBadgeWrap').style.display='none';
+
+  // Storage
+  const storageCostAnnual = getTotalStorageCost();
+
+  // Totals
+  const totalArr = saasArr + actNet;
+  const totalCost= saasCost + actCost + storageCostAnnual;
+  const gm       = totalArr>0 ? (totalArr-totalCost)/totalArr*100 : null;
+  const gmNoSt   = totalArr>0 ? (saasArr+actNet-saasCost-actCost)/(saasArr+actNet)*100 : null;
+
+  // Metrics
+  document.getElementById('mSaasArr').textContent  = saasArr ? fmt(saasArr) : '—';
+  document.getElementById('mSaasCost').textContent = saasArr ? `6% cost: ${fmt(saasCost)}` : '—';
+  document.getElementById('mActArr').textContent   = actNet  ? fmt(actNet)  : '—';
+  document.getElementById('mActDisc').textContent  = actNet  ? `${(lDisc*100).toFixed(1)}% discount applied` : '—';
+  document.getElementById('mTotalArr').textContent = totalArr? fmt(totalArr): '—';
+  const gmEl=document.getElementById('mGM');
+  gmEl.textContent = gm!==null ? pct(gm) : '—';
+  gmEl.className   = 'metric-value'+(gm===null?'':gm>=threshG?' green':gm>=threshY?' yellow':' red');
+  gmEl.style.color = gm===null?'':gm>=threshG?'var(--green)':gm>=threshY?'var(--yellow)':'var(--red)';
+  document.getElementById('mGMSub').textContent = storageCostAnnual>0
+    ? `${fmt(storageCostAnnual)}/yr storage included`:'Net of SAAS cost + action cost';
+
+  // Storage card
+  if(storageCostAnnual>0){
+    document.getElementById('storageImpactCard').style.display='block';
+    document.getElementById('storageImpactSub').textContent=`Annual cost: ${fmt(storageCostAnnual)}`;
+    document.getElementById('storageGMWithout').textContent=gmNoSt!==null?pct(gmNoSt):'—';
+    document.getElementById('storageGMWith').textContent=gm!==null?pct(gm):'—';
+    document.getElementById('storageGMWith').style.color=gm!==null?(gm>=threshG?'var(--green)':gm>=threshY?'var(--yellow)':'var(--red)'):'';
+  } else document.getElementById('storageImpactCard').style.display='none';
+
+  // Approval banner — only update when in New Deal mode
+  if(currentMode==='new'){
+    updateApprovalBanner(gm, threshG, threshY, customer, saasArr, actNet, totalArr);
+  }
+
+  // Threshold label
+  document.getElementById('threshRedLabel').textContent=`<${threshY}%`;
+
+  // Breakdown
+  renderBreakdown(actResult.breakdown, lDisc);
+
+  return {gm, saasArr, actNet, totalArr};
+}
+
+function updateApprovalBanner(gm, threshG, threshY, customer, saasArr, actNet, totalArr) {
+  const banner=document.getElementById('approvalBanner');
+  const icon=document.getElementById('approvalIcon');
+  const title=document.getElementById('approvalTitle');
+  const sub=document.getElementById('approvalSub');
+  const gmEl=document.getElementById('approvalGM');
+  banner.className='approval-banner';
+  if(gm===null){
+    icon.textContent='—';title.textContent='Enter deal details';
+    sub.textContent='Complete SAAS and action inputs to calculate margin';
+    gmEl.textContent='—';
+  } else if(gm>=threshG){
+    banner.classList.add('approved');icon.textContent='✓';title.textContent='Approved';
+    sub.textContent='Deal margin meets threshold — ready to submit';gmEl.textContent=pct(gm);
+  } else if(gm>=threshY){
+    banner.classList.add('seek');icon.textContent='⚠';title.textContent='Seek Approval';
+    sub.textContent='Below approved threshold — post in deal channel for review';gmEl.textContent=pct(gm);
+  } else {
+    banner.classList.add('rejected');icon.textContent='✗';title.textContent='Rejected';
+    sub.textContent='Deal margin too low — needs exception justification';gmEl.textContent=pct(gm);
+  }
+  if(customer) document.getElementById('approvalCustomer').textContent=customer+(document.getElementById('aeName').value?' · AE: '+document.getElementById('aeName').value:'');
+  document.getElementById('metaSaasArr').textContent=saasArr?fmt(saasArr):'—';
+  document.getElementById('metaActArr').textContent=actNet?fmt(actNet):'—';
+  document.getElementById('metaTotalArr').textContent=totalArr?fmt(totalArr):'—';
+}
+
+// ============================================================
+// ACTION CALCULATIONS
+// ============================================================
+function calcActionsResult(fx) {
+  const breakdown=[], priceOvr=priceEditMode?priceOverrides:{};
+  let grossRev=0, cost=0;
+  for(const co of countries){
+    const vols=landVolumes[co.name]||[0,0,0,0,0,0,0,0];
+    let cGross=0,cCost=0;
+    const cfx=fx[co.currency]||1;
+    const cVols=[...vols];
+    for(let vi=0;vi<8;vi++){
+      const qty=vols[vi]||0;if(!qty)continue;
+      const pi=ACTION_PRICE_IDX[vi],ci=ACTION_COST_IDX[vi];
+      const price=priceOvr[co.name]?.[pi]??co.prices[pi];
+      const c=co.costs[ci];
+      if(price!=null) cGross+=price*qty*cfx;
+      if(c!=null)     cCost +=c*qty*cfx;
+    }
+    if(cGross||cCost){
+      grossRev+=cGross; cost+=cCost;
+      breakdown.push({name:co.name,vols,rev:cGross,revLocal:cGross/cfx,cost:cCost,currency:co.currency,fx:cfx});
+    }
+  }
+  return {grossRev,cost,breakdown};
+}
+
+function renderBreakdown(breakdown, disc) {
+  const tbody=document.getElementById('breakdownBody');
+  if(!breakdown||breakdown.length===0){
+    tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:20px;">Add action volumes in the <strong>Actions</strong> tab to see country breakdown</td></tr>`;
+    const bar=document.getElementById('breakdownTotalsBar');
+    if(bar)bar.textContent='';
+    return;
+  }
+  const symMap={GBP:'£',EUR:'€',CAD:'CA$',USD:'$'};
+  let tRev=0,tCost=0,html='';
+  // Compute column totals
+  const colTotals=Array(8).fill(0);
+  breakdown.forEach(b=>b.vols.forEach((v,i)=>colTotals[i]+=(v||0)));
+  const totalActions=colTotals.reduce((s,v)=>s+v,0);
+
+  breakdown.forEach(b=>{
+    const net=b.rev*(1-disc);tRev+=net;tCost+=b.cost;
+    const m=net>0?(net-b.cost)/net*100:0;
+    const mc=m>=70?'high':m>=65?'mid':'low';
+    const isNonUSD=b.currency&&b.currency!=='USD';
+    const sym=symMap[b.currency]||'$';
+    const localNet=b.revLocal?b.revLocal*(1-disc):null;
+    const revCell=isNonUSD
+      ?`<div style="font-family:var(--mono);font-size:11px;">$${Math.round(net).toLocaleString()}</div><div style="font-size:10px;color:var(--text3);">${sym}${localNet?Math.round(localNet).toLocaleString():'—'}</div>`
+      :`$${Math.round(net).toLocaleString()}`;
+    const fxBadge=isNonUSD?`<span style="font-family:var(--mono);font-size:9px;background:var(--blue-dim);color:var(--blue);border-radius:4px;padding:1px 5px;margin-left:4px;">${b.currency}</span>`:'';
+    const rowActions=b.vols.reduce((s,v)=>s+(v||0),0);
+    html+=`<tr><td>${b.name}${fxBadge}</td>`;
+    b.vols.forEach(v=>html+=`<td>${v||0}</td>`);
+    html+=`<td style="font-weight:600;">${rowActions.toLocaleString()}</td>`;
+    html+=`<td>${revCell}</td><td><span class="margin-pill ${mc}">${m.toFixed(1)}%</span></td></tr>`;
+  });
+  const tm=tRev>0?(tRev-tCost)/tRev*100:0;
+  const tmc=tm>=70?'high':tm>=65?'mid':'low';
+  html+=`<tr class="total-row"><td>Total</td>`;
+  colTotals.forEach(t=>html+=`<td>${t||''}</td>`);
+  html+=`<td style="font-weight:700;">${totalActions.toLocaleString()}</td>`;
+  html+=`<td>$${Math.round(tRev).toLocaleString()}</td><td><span class="margin-pill ${tmc}">${tm.toFixed(1)}%</span></td></tr>`;
+  tbody.innerHTML=html;
+
+  // Update totals bar above table
+  const bar=document.getElementById('breakdownTotalsBar');
+  if(bar){
+    const parts=[];
+    const labels=['Onboards','Leavers','ITAD','Refreshes','Intakes','Expedited','Overnight','Lightweight'];
+    colTotals.forEach((v,i)=>{if(v>0)parts.push(`${labels[i]}: ${v.toLocaleString()}`);});
+    bar.textContent=`${totalActions.toLocaleString()} total · `+parts.join(' · ');
+  }
+}
+
+// ============================================================
+// ACTIONS TABLE
+// ============================================================
+function buildRenewalActionsTable(container) {
+  const hasCTD = Object.keys(landVolumes).some(c => landVolumes[c].some(v=>v>0));
+  const hasForecast = Object.keys(propForecastVolumes).length > 0;
+
+  if(!hasCTD && !hasForecast) {
+    container.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:12px 0;">
+      Upload CSVs on the Overview tab to populate action volumes.</div>`;
+    return;
+  }
+
+  const currentView = container.dataset.renewalView || (hasCTD ? 'ctd' : 'forecast');
+  const isForecast = currentView === 'forecast';
+  const volumes = isForecast ? propForecastVolumes : landVolumes;
+
+  const ctdTotal = Object.values(landVolumes).reduce((s,v)=>s+v.reduce((a,b)=>a+b,0),0);
+  const forecastTotal = Object.values(propForecastVolumes).reduce((s,v)=>s+v.reduce((a,b)=>a+b,0),0);
+
+  const toggleHtml = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);
+        border-radius:8px;padding:3px;gap:2px;">
+        <button onclick="setRenewalActionsView('ctd')"
+          style="font-size:11px;font-weight:500;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;
+            background:${!isForecast?'var(--surface)':'transparent'};
+            color:${!isForecast?'var(--text)':'var(--text3)'};
+            box-shadow:${!isForecast?'0 1px 3px rgba(0,0,0,0.1)':''};
+            ${!hasCTD?'opacity:0.4;pointer-events:none;':''}">
+          📋 Contract to Date
+          ${hasCTD?`<span style="font-family:var(--mono);font-size:10px;margin-left:4px;opacity:0.6;">${ctdTotal.toLocaleString()}</span>`:''}
+        </button>
+        <button onclick="setRenewalActionsView('forecast')"
+          style="font-size:11px;font-weight:500;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;
+            background:${isForecast?'var(--surface)':'transparent'};
+            color:${isForecast?'var(--text)':'var(--text3)'};
+            box-shadow:${isForecast?'0 1px 3px rgba(0,0,0,0.1)':''};
+            ${!hasForecast?'opacity:0.4;pointer-events:none;':''}">
+          🔮 Renewal Forecast
+          ${hasForecast?`<span style="font-family:var(--mono);font-size:10px;margin-left:4px;opacity:0.6;">${forecastTotal.toLocaleString()}</span>`:''}
+        </button>
+      </div>
+      ${isForecast ? '<div style="font-size:11px;color:var(--text3);">✏ Edit forecast volumes — changes update proposal margin live</div>' 
+                   : '<div style="font-size:11px;color:var(--text3);">Read-only — actuals from CTD CSV</div>'}
+    </div>`;
+
+  // Build table
+  const allActive = countries.filter(co => (volumes[co.name]||[]).some(v=>v>0));
+  const inactive = isForecast ? countries.filter(co => !(volumes[co.name]||[]).some(v=>v>0)) : [];
+
+  if(!allActive.length) {
+    container.innerHTML = toggleHtml + `<div style="color:var(--text3);font-size:11px;padding:8px 0;">
+      No data — upload a CSV on the Overview tab.</div>`;
+    return;
+  }
+
+  const totals = [0,0,0,0,0,0,0,0];
+  let rows = '';
+  allActive.forEach(co => {
+    const v = volumes[co.name] || [0,0,0,0,0,0,0,0];
+    v.forEach((q,i) => totals[i] += q);
+    const rowTotal = v.reduce((s,q) => s+(q||0), 0);
+    rows += `<tr style="background:rgba(37,99,235,0.03);">
+      <td><span class="tier-dot ${co.tier===1?'t1':'t2'}"></span>${co.name}</td>
+      ${v.map((q, vi) => {
+        const pi = ACTION_PRICE_IDX[vi];
+        if(co.prices[pi] === null) return '<td style="color:var(--text3);font-size:10px;text-align:center;">—</td>';
+        if(isForecast) {
+          return `<td><input type="number" min="0" value="${q||''}" placeholder="0"
+            class="action-qty-input"
+            data-country="${co.name}" data-vi="${vi}"
+            oninput="onForecastVolumeChange(this)"></td>`;
+        }
+        return `<td>${q||0}</td>`;
+      }).join('')}
+      <td style="font-weight:600;">${rowTotal}</td>
+    </tr>`;
+  });
+
+  const grandTotal = totals.reduce((s,v)=>s+v,0);
+  rows += `<tr class="total-row"><td>Total</td>${totals.map(t=>`<td>${t||''}</td>`).join('')}<td style="font-weight:700;">${grandTotal}</td></tr>`;
+
+  let inactiveHtml = '';
+  if(isForecast && inactive.length > 0) {
+    const inactiveId = 'inactiveForecastRows';
+    inactiveHtml = `<div style="margin-top:8px;">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;
+        letter-spacing:0.5px;padding:4px 0;cursor:pointer;display:flex;align-items:center;gap:6px;"
+        onclick="toggleInactiveForecast(this)">
+        <span>▶</span><span>Add Country (${inactive.length} available)</span>
+      </div>
+      <div style="display:none;" id="${inactiveId}">
+        <div class="actions-table-wrap" style="margin-top:4px;">
+          <table class="actions-table">
+            <thead><tr>
+              <th>Country</th>
+              <th class="action-col">Onboards</th><th class="action-col">Leavers</th>
+              <th class="action-col">ITAD</th><th class="action-col">Refreshes</th>
+              <th class="action-col">Intakes</th><th class="action-col">Expedited</th>
+              <th class="action-col">Overnight</th><th class="action-col">Lightweight</th>
+              <th class="action-col">Total</th>
+            </tr></thead>
+            <tbody>${inactive.map(co => {
+              const v = [0,0,0,0,0,0,0,0];
+              return `<tr>
+                <td><span class="tier-dot ${co.tier===1?'t1':'t2'}"></span>${co.name}</td>
+                ${v.map((q,vi)=>{ const pi=ACTION_PRICE_IDX[vi]; return co.prices[pi]===null?'<td style="color:var(--text3);font-size:10px;text-align:center;">—</td>':`<td><input type="number" min="0" value="" placeholder="0" class="action-qty-input" data-country="${co.name}" data-vi="${vi}" oninput="onForecastVolumeChange(this)"></td>`; }).join('')}
+                <td>0</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  container.dataset.renewalView = currentView;
+  container.innerHTML = toggleHtml + `
+    <div class="actions-table-wrap">
+      <table class="actions-table">
+        <thead><tr>
+          <th>Country</th>
+          <th class="action-col">Onboards</th><th class="action-col">Leavers</th>
+          <th class="action-col">ITAD</th><th class="action-col">Refreshes</th>
+          <th class="action-col">Intakes</th><th class="action-col">Expedited</th>
+          <th class="action-col">Overnight</th><th class="action-col">Lightweight</th>
+          <th class="action-col" style="font-weight:700;">Total</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>${inactiveHtml}`;
+}
+
+function toggleInactiveForecast(btn) {
+  const tbl = document.getElementById('inactiveForecastRows');
+  if(!tbl) return;
+  const open = tbl.style.display === 'none';
+  tbl.style.display = open ? 'block' : 'none';
+  btn.querySelector('span').textContent = open ? '▼' : '▶';
+}
+
+function onForecastVolumeChange(inp) {
+  const country = inp.dataset.country;
+  const vi = parseInt(inp.dataset.vi);
+  if(!propForecastVolumes[country]) propForecastVolumes[country] = [0,0,0,0,0,0,0,0];
+  propForecastVolumes[country][vi] = parseInt(inp.value) || 0;
+  // Update total in this row
+  const row = inp.closest('tr');
+  if(row) {
+    const inputs = row.querySelectorAll('input[type="number"]');
+    let rowTotal = 0;
+    inputs.forEach(i => rowTotal += parseInt(i.value)||0);
+    const lastTd = row.querySelector('td:last-child');
+    if(lastTd) lastTd.textContent = rowTotal;
+  }
+  renderBiHero();
+}
+
+
+function setRenewalActionsView(view) {
+  const container = document.getElementById('actLandTable');
+  if(container) {
+    container.dataset.renewalView = view;
+    buildActionsTable();
+  }
+}
+
+
+function buildActionsTable() {
+  const container=document.getElementById('actLandTable');
+  if(!container) return;
+
+  // In Renewal mode, show CTD + Forecast side by side
+  if(currentMode==='ren') {
+    buildRenewalActionsTable(container);
+    return;
+  }
+
+  const active=countries.filter(co=>(landVolumes[co.name]||[]).some(q=>q>0));
+  const inactive=countries.filter(co=>!(landVolumes[co.name]||[]).some(q=>q>0));
+
+  function makeRow(co) {
+    const v=landVolumes[co.name]||[0,0,0,0,0,0,0,0];
+    const sym={GBP:'£',EUR:'€',CAD:'CA$',USD:'$'}[co.currency]||'$';
+    const tdot=co.tier===1?'t1':'t2';
+    let row=`<tr>
+      <td><span class="tier-dot ${tdot}"></span>${co.name}
+        ${priceEditMode?`<span style="font-size:9px;color:var(--text3);margin-left:4px;">${sym}</span>`:''}
+      </td>`;
+    for(let vi=0;vi<8;vi++){
+      const pi=ACTION_PRICE_IDX[vi];
+      const listP=co.prices[pi];
+      const ovrP=priceOverrides[co.name]?.[pi];
+      const effP=ovrP!=null?ovrP:listP;
+      const inputStyle=ovrP!=null?'border-color:var(--orange);':'';
+      const volVal=v[vi]||0;
+      if(listP===null&&!priceEditMode){
+        row+=`<td><span style="color:var(--text3);font-family:var(--mono);font-size:10px;">—</span></td>`;
+      } else {
+        row+=`<td>
+          <input type="number" min="0" value="${volVal||''}" placeholder="0"
+            data-country="${co.name}" data-vi="${vi}"
+            style="${inputStyle}" oninput="onVolumeChange(this)">
+          ${priceEditMode&&listP!==null?`<div style="font-size:9px;margin-top:2px;font-family:var(--mono);">
+            <input type="number" min="0" value="${effP||''}" placeholder="${listP}"
+              data-country="${co.name}" data-pi="${pi}"
+              style="width:52px;font-size:10px;padding:2px 4px;${ovrP!=null?'border-color:var(--orange);color:var(--orange);':''}"
+              oninput="onPriceOverride(this)">
+          </div>`:''}
+        </td>`;
+      }
+    }
+    row+=`</tr>`;
+    return row;
+  }
+
+  const totals=[0,0,0,0,0,0,0,0];
+  countries.forEach(co=>{
+    const v=landVolumes[co.name]||[0,0,0,0,0,0,0,0];
+    v.forEach((q,i)=>totals[i]+=q);
+  });
+
+  const thead=`<table class="actions-table">
+    <thead><tr>
+      <th>Country / Market</th>
+      <th class="action-col">Onboards</th><th class="action-col">Leavers</th>
+      <th class="action-col">ITAD</th><th class="action-col">Refreshes</th>
+      <th class="action-col">Intakes</th><th class="action-col">Expedited</th>
+      <th class="action-col">Overnight</th><th class="action-col">Lightweight</th>
+    </tr></thead>`;
+
+  let html=`<div class="actions-grid-title">Action Volumes by Country
+    <span style="font-weight:400;font-size:10px;color:var(--text3);margin-left:8px;">Enter expected annual volumes</span>
+  </div>`;
+
+  // Active countries section
+  if(active.length>0){
+    html+=`<div style="margin-bottom:2px;">
+      <div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;padding:6px 0 4px;">
+        ● Active Countries (${active.length})
+      </div>
+      <div class="actions-table-wrap">${thead}<tbody>`;
+    active.forEach(co=>html+=makeRow(co));
+    // Totals
+    html+=`<tr class="total-row"><td>Total</td>`;
+    totals.forEach(t=>html+=`<td>${t>0?t:''}</td>`);
+    html+=`</tr></tbody></table></div></div>`;
+  }
+
+  // Inactive countries section — collapsed by default, toggle to expand
+  if(inactive.length>0){
+    const inactiveId=`inactiveRows_${Date.now()}`;
+    html+=`<div style="margin-top:8px;">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;padding:4px 0;
+        cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="toggleInactiveCountries(this)">
+        <span id="inactiveToggleIcon">▶</span>
+        <span>Add Country (${inactive.length} available)</span>
+      </div>
+      <div id="inactiveCountriesTable" style="display:none;margin-top:4px;">
+        <div class="actions-table-wrap">${thead}<tbody>`;
+    inactive.forEach(co=>html+=makeRow(co));
+    html+=`</tbody></table></div></div></div>`;
+  }
+
+  container.innerHTML=html;
+}
+
+function toggleInactiveCountries(btn) {
+  const table=document.getElementById('inactiveCountriesTable');
+  const icon=document.getElementById('inactiveToggleIcon');
+  if(!table)return;
+  const open=table.style.display==='none';
+  table.style.display=open?'block':'none';
+  if(icon)icon.textContent=open?'▼':'▶';
+}
+
+function onVolumeChange(inp) {
+  const c=inp.dataset.country,vi=parseInt(inp.dataset.vi);
+  if(!landVolumes[c]) landVolumes[c]=[0,0,0,0,0,0,0,0];
+  landVolumes[c][vi]=parseInt(inp.value)||0;
+  recalc();
+}
+
+function onPriceOverride(inp) {
+  const c=inp.dataset.country,pi=parseInt(inp.dataset.pi);
+  if(!priceOverrides[c]) priceOverrides[c]=Array(8).fill(null);
+  const v=cleanNum(inp.value);
+  priceOverrides[c][pi]=v;
+  recalc();
+}
+
+function togglePriceEdit() {
+  priceEditMode=!priceEditMode;
+  const btn=document.getElementById('editPricesBtn');
+  btn.textContent=priceEditMode?'✓ Done Editing':'✏ Edit Prices';
+  btn.style.background=priceEditMode?'var(--yellow-dim)':'';
+  buildActionsTable();
+}
+
+function clearActions() {
+  countries.forEach(c=>landVolumes[c.name]=[0,0,0,0,0,0,0,0]);
+  priceOverrides={};
+  buildActionsTable();
+  // Reset upload zone
+  const uz=document.getElementById('uploadZone');
+  if(uz){
+    uz.classList.remove('success','dragover');
+    document.getElementById('uploadTitle').textContent='Drop action-details CSV here or click to browse';
+    document.getElementById('uploadSub').textContent='Detailed order-level format (with Order ID column) · Standard Order = 1 per row · ITAD/Intake = Summary Qty';
+  }
+  const csvIn=document.getElementById('csvUpload');
+  if(csvIn) csvIn.value='';
+  recalc();
+}
+
+// ============================================================
+// CSV UPLOAD — DETAILED ORDER-LEVEL FORMAT
+// ============================================================
+function handleCSVUpload(event) {
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const rows=parseCSV(e.target.result);
+    if(rows.length<2){alert('CSV appears empty');return;}
+    const result=applyDetailedCSV(rows,'land');
+    const {matched,totalActions}=result;
+    buildActionsTable();recalc();
+    const uz=document.getElementById('uploadZone');
+    uz.classList.add('success');
+    const formatLabel = result.format==='forecast'?'AE forecast format':result.format==='order'?'Order-level format':'Unknown format';
+    document.getElementById('uploadTitle').textContent=
+      matched>0?`✓ ${matched} countries · ${totalActions} actions from ${file.name}`
+              :'⚠ No countries matched — check format';
+    document.getElementById('uploadSub').textContent=
+      matched>0?`${formatLabel} detected`:'Supported: AE forecast CSV (Country + New Hires + Leavers…) or order-level CSV (Region + Action Type + Order ID…)';
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file=event.dataTransfer.files[0];if(!file)return;
+  const dt=new DataTransfer();dt.items.add(file);
+  document.getElementById('csvUpload').files=dt.files;
+  handleCSVUpload({target:{files:[file]}});
+}
+
+function detectCSVFormat(rows) {
+  // Score each of first 5 rows as header candidates
+  let headerRowIdx=0, bestScore=-1;
+  for(let i=0;i<Math.min(5,rows.length);i++){
+    const r=rows[i].map(h=>(h||'').toLowerCase());
+    let score=0;
+    if(r.some(h=>h==='country'||h.includes('country')))score+=3;
+    if(r.some(h=>h.includes('region')))score+=2;
+    if(r.some(h=>h.includes('action type')))score+=3;
+    if(r.some(h=>h.includes('order id')))score+=2;
+    if(r.some(h=>h.includes('new hire')||h.includes('expected new')||h.includes('hires')))score+=2;
+    if(r.some(h=>h.includes('leaver')||h.includes('leavers')))score+=2;
+    if(score>bestScore){bestScore=score;headerRowIdx=i;}
+  }
+  const h=rows[headerRowIdx].map(c=>(c||'').toLowerCase().replace(/[\n\r]/g,' ').trim());
+  const hasActionType=h.some(c=>c.includes('action type'));
+  const hasOrderId=h.some(c=>c.includes('order id'));
+  const hasNewHires=h.some(c=>c.includes('new hire')||c.includes('expected new')||c.includes('hires'));
+  const hasCountry=h.some(c=>c==='country');
+  // Forecast format: has country + new hires columns, no action type
+  if((hasNewHires||hasCountry)&&!hasActionType) return {format:'forecast',headerRowIdx,h};
+  // Order-level format: has action type (and optionally order id)
+  if(hasActionType) return {format:'order',headerRowIdx,h};
+  return {format:'unknown',headerRowIdx,h};
+}
+
+function applyDetailedCSV(rows, mode) {
+  const {format, headerRowIdx, h} = detectCSVFormat(rows);
+
+  if(format==='forecast') return applyForecastCSV(rows, headerRowIdx, h, mode);
+  if(format==='order')    return applyOrderCSV(rows, headerRowIdx, h, mode);
+  return {matched:0, totalActions:0, format:'unknown'};
+}
+
+function applyForecastCSV(rows, headerRowIdx, h, mode) {
+  // AE Forecast format (Ping Identity): Country, FTE, New Hires, Leavers, Refreshes, Intake
+  // Country names already canonical (U.S. (USD), U.K. (GBP), etc.)
+  const countryCol = h.findIndex(c=>c==='country'||c.includes('country'));
+  const hiresCol   = h.findIndex(c=>c.includes('new hire')||c.includes('expected new')||c.includes('hires'));
+  const leaversCol = h.findIndex(c=>c.includes('leaver')||c.includes('expected leaver'));
+  const refreshCol = h.findIndex(c=>c.includes('refresh'));
+  const intakeCol  = h.findIndex(c=>(c.includes('intake')&&!c.includes('cost')&&!c.includes('fee')&&!c.includes('total')&&!c.includes('$')));
+  if(countryCol<0) return {matched:0,totalActions:0,format:'forecast'};
+
+  const store=mode==='land'?landVolumes:mode==='prop'?propForecastVolumes:{};
+  const counts={};
+  const SKIP_ROWS=new Set(['total','export only','rest of world','ukraine','uruguay','roadmap']);
+
+  for(let i=headerRowIdx+1;i<rows.length;i++){
+    const r=rows[i];
+    const countryRaw=(r[countryCol]||'').trim();
+    if(!countryRaw) continue;
+    // Skip summary/roadmap rows
+    if(SKIP_ROWS.has(countryRaw.toLowerCase())) continue;
+    if(/total/i.test(countryRaw)||/export only/i.test(countryRaw)||/rest of world/i.test(countryRaw)) continue;
+
+    // Try direct name match first (Ping Identity already uses canonical names)
+    const country = FALLBACK_COUNTRIES.find(c=>c.name===countryRaw)?.name
+      || FALLBACK_COUNTRIES.find(c=>countryRaw.toLowerCase().includes(c.name.split(' ')[0].toLowerCase()))?.name
+      || REGION_NAME_MAP[countryRaw.toLowerCase()]
+      || null;
+    if(!country) continue;
+
+    const cn=s=>parseInt((s||'').replace(/[^0-9.]/g,''))||0;
+    const hires   = hiresCol>=0   ? cn(r[hiresCol])   : 0; // Onboards (idx 0)
+    const leavers = leaversCol>=0 ? cn(r[leaversCol]) : 0; // Leavers  (idx 1)
+    const refresh = refreshCol>=0 ? cn(r[refreshCol]) : 0; // Refreshes (idx 3)
+    const intake  = intakeCol>=0  ? cn(r[intakeCol])  : 0; // Intakes  (idx 4)
+
+    const total=hires+leavers+refresh+intake;
+    if(!total) continue;
+
+    if(!store[country]) store[country]=[0,0,0,0,0,0,0,0];
+    store[country][0]+=hires;
+    store[country][1]+=leavers;
+    store[country][3]+=refresh;
+    store[country][4]+=intake;
+    counts[country]=(counts[country]||0)+total;
+  }
+
+  return {matched:Object.keys(counts).length, totalActions:Object.values(counts).reduce((s,v)=>s+v,0), format:'forecast'};
+}
+
+function applyOrderCSV(rows, headerRowIdx, h, mode) {
+  // Order-level detailed format (Atrium): Region, Action Type, Order ID, Summary Qty
+  const regionCol   =h.findIndex(c=>c==='region'||c.includes('region'));
+  const regionCodeCol=h.findIndex(c=>c==='region code'||c==='regioncode');
+  const actionCol   =h.findIndex(c=>c.includes('action type'));
+  const qtyCol      =h.findIndex(c=>c==='summary qty'||c.includes('summary qty')||c==='quantity'||c==='qty');
+  const orderIdCol  =h.findIndex(c=>c==='order id'||c.includes('order id'));
+  if(regionCol<0||actionCol<0) return {matched:0,totalActions:0,format:'order'};
+
+  const store=mode==='land'?landVolumes:mode==='prop'?propForecastVolumes:{};
+  const counts={};
+
+  for(let i=headerRowIdx+1;i<rows.length;i++){
+    const r=rows[i];
+    const actionRaw=(r[actionCol]||'').trim().toLowerCase();
+    if(!actionRaw||actionRaw==='total') continue;
+    const tidx=ACTION_TYPE_MAP[actionRaw];
+    if(tidx==null) continue;
+
+    const regionRaw=(r[regionCol]||'').trim().toLowerCase();
+    const regionCode=(regionCodeCol>=0?(r[regionCodeCol]||'').trim().toUpperCase():'');
+    const country=REGION_NAME_MAP[regionRaw]||REGION_CODE_MAP[regionCode]||REGION_CODE_MAP[regionRaw.toUpperCase()]||null;
+    if(!country) continue;
+
+    const orderId=orderIdCol>=0?(r[orderIdCol]||'').trim():'';
+    const isBulk=BULK_ACTION_TYPES.has(actionRaw)||!orderId;
+    const qty=isBulk?(cleanNum(r[qtyCol])||1):1;
+
+    if(!store[country]) store[country]=[0,0,0,0,0,0,0,0];
+    store[country][tidx]+=qty;
+    counts[country]=(counts[country]||0)+qty;
+  }
+
+  return {matched:Object.keys(counts).length, totalActions:Object.values(counts).reduce((s,v)=>s+v,0), format:'order'};
+}
+
+// ============================================================
+// RENEWAL / EXPANSION CSV
+// ============================================================
+function handleRenewalUpload(event) {
+  const files=Array.from(event.target.files||[]);if(!files.length)return;
+  let loaded=0;renewalPeriods=[];
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const result=parseDetailedRenewalCSV(e.target.result,file.name);
+      if(result)renewalPeriods.push(result);
+      loaded++;
+      if(loaded===files.length){
+        document.getElementById('renewalUploadStatus').textContent=
+          `✓ ${files.length} file${files.length>1?'s':''} loaded`;
+        document.getElementById('renewalDropZone').classList.add('success');
+        populateRenewalFromCSV();
+        renderBiHero();
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function handleRenewalDrop(evt) {
+  evt.preventDefault();
+  document.getElementById('renewalDropZone').classList.remove('dragover');
+  const files=evt.dataTransfer.files;if(!files.length)return;
+  const inp=document.getElementById('renewalCsvInput');
+  const dt=new DataTransfer();Array.from(files).forEach(f=>dt.items.add(f));
+  inp.files=dt.files;
+  handleRenewalUpload({target:{files:Array.from(files)}});
+}
+
+function parseDetailedRenewalCSV(text, filename) {
+  const rows=parseCSV(text);
+  if(rows.length<2)return null;
+  
+  let headerRowIdx=0,bestScore=-1;
+  for(let i=0;i<Math.min(5,rows.length);i++){
+    const r=rows[i].map(h=>(h||'').toLowerCase());
+    let score=0;
+    if(r.some(h=>h.includes('region')))score+=3;
+    if(r.some(h=>h.includes('action type')))score+=3;
+    if(r.some(h=>h.includes('order id')))score+=2;
+    if(score>bestScore){bestScore=score;headerRowIdx=i;}
+  }
+  const h=rows[headerRowIdx].map(c=>(c||'').toLowerCase().trim());
+  const regionCol=h.findIndex(c=>c==='region'||c.includes('region'));
+  const regionCodeCol=h.findIndex(c=>c==='region code'||c==='regioncode');
+  const actionCol=h.findIndex(c=>c.includes('action type'));
+  const qtyCol=h.findIndex(c=>c==='summary qty'||c.includes('summary qty')||c==='quantity');
+  const orderIdCol=h.findIndex(c=>c==='order id'||c.includes('order id'));
+  const priceCol=h.findIndex(c=>c.includes('unit price'));
+  const discCol=h.findIndex(c=>c.includes('discount'));
+  const hasOrderId=orderIdCol>=0;
+  
+  const volumes={};
+  let csvRevenue=0,detectedDiscount=0,discCount=0;
+  
+  for(let i=headerRowIdx+1;i<rows.length;i++){
+    const r=rows[i];
+    const actionRaw=(r[actionCol]||'').trim().toLowerCase();
+    if(!actionRaw||actionRaw==='total')continue;
+    const tidx=ACTION_TYPE_MAP[actionRaw];if(tidx==null)continue;
+    
+    const regionRaw=(r[regionCol]||'').trim().toLowerCase();
+    const regionCode=(regionCodeCol>=0?(r[regionCodeCol]||'').trim().toUpperCase():'');
+    const country=REGION_NAME_MAP[regionRaw]||REGION_CODE_MAP[regionCode]||null;
+    if(!country)continue;
+    
+    const orderId=hasOrderId?(r[orderIdCol]||'').trim():'';
+    const isBulk=BULK_ACTION_TYPES.has(actionRaw)||!orderId;
+    const qty=isBulk?(cleanNum(r[qtyCol])||1):1;
+    
+    if(!volumes[country])volumes[country]=[0,0,0,0,0,0,0,0];
+    volumes[country][tidx]+=qty;
+    
+    // Revenue
+    const price=priceCol>=0?cleanNum(r[priceCol])||0:0;
+    const disc=discCol>=0?cleanNum(r[discCol])||0:0;
+    const co=countries.find(c=>c.name===country);
+    const cfx=co?(FX_RATES[co.currency]||1):1;
+    csvRevenue+=price*qty*(1-disc/100)*cfx;
+    if(disc>0){detectedDiscount+=disc;discCount++;}
+  }
+  
+  const avgDiscount=discCount?detectedDiscount/discCount:0;
+  const period=filename.match(/(\d{4}-\d{2})/)?.[1]||filename;
+  return {period,volumes,csvRevenue,detectedDiscount:avgDiscount};
+}
+
+function populateRenewalFromCSV() {
+  if(!renewalPeriods.length)return;
+  
+  const merged={};
+  let totalDiscount=0,discCount=0;
+  renewalPeriods.forEach(p=>{
+    if(p.detectedDiscount>0){totalDiscount+=p.detectedDiscount;discCount++;}
+    Object.entries(p.volumes||{}).forEach(([c,v])=>{
+      if(!merged[c])merged[c]=[0,0,0,0,0,0,0,0];
+      v.forEach((q,i)=>merged[c][i]+=q);
+    });
+  });
+  const avgDisc=discCount?totalDiscount/discCount:0;
+  
+  // Populate CTD vol summary
+  renderVolSummary('ctdVolSummary',merged,false);
+  // Pre-fill proposal
+  renderVolSummary('propVolSummary',merged,true);
+  // Also populate actions tab
+  Object.entries(merged).forEach(([c,v])=>landVolumes[c]=[...v]);
+  buildActionsTable();
+  
+  document.getElementById('ctdActDisc').textContent=avgDisc?`${avgDisc.toFixed(1)}%`:'—';
+  initPropActDiscDropdown(avgDisc);
+}
+
+function renderVolSummary(elId, volumes, editable) {
+  const el=document.getElementById(elId);if(!el)return;
+  if(!volumes||Object.keys(volumes).length===0){
+    el.innerHTML='<div style="font-size:11px;color:var(--text3);">No data — upload CSV above</div>';return;
+  }
+  const totals=[0,0,0,0,0,0,0,0];
+  Object.values(volumes).forEach(v=>v.forEach((q,i)=>totals[i]+=q));
+  const hasAny = totals.some(t=>t>0);
+  if(!hasAny){
+    el.innerHTML='<div style="font-size:11px;color:var(--text3);">No action volumes found</div>';return;
+  }
+  // Always read-only on Overview — edit in Actions tab
+  let html='';
+  for(let vi=0;vi<8;vi++){
+    if(!totals[vi])continue;
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:2px 0;">
+      <span style="color:var(--text2);">${ACTION_LABELS[vi]}</span>
+      <span style="font-family:var(--mono);font-weight:500;">${totals[vi].toLocaleString()}</span>
+    </div>`;
+  }
+  const grandTotal = totals.reduce((s,v)=>s+v,0);
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;
+    padding:5px 0 2px;border-top:1px solid var(--border);margin-top:4px;">
+    <span style="color:var(--text3);font-weight:600;">TOTAL</span>
+    <span style="font-family:var(--mono);font-weight:700;">${grandTotal.toLocaleString()}</span>
+  </div>`;
+  if(editable) {
+    html += `<div style="font-size:10px;color:var(--blue);margin-top:4px;cursor:pointer;"
+      onclick="showPage('actions',document.getElementById('navActions'))">
+      ✏ Edit in Actions tab →
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+// ============================================================
+// BIMODAL HERO (Expansion / Renewal)
+// ============================================================
+function renderBiHero() {
+  const fx=getFX();
+  const threshG=parseFloat(document.getElementById('threshGreen').value)||70;
+  const threshY=parseFloat(document.getElementById('threshYellow').value)||65;
+  
+  // Build merged CTD volumes
+  const ctdMerged={};
+  renewalPeriods.forEach(p=>Object.entries(p.volumes||{}).forEach(([c,v])=>{
+    if(!ctdMerged[c])ctdMerged[c]=[0,0,0,0,0,0,0,0];
+    v.forEach((q,i)=>ctdMerged[c][i]+=q);
+  }));
+  
+  // Year badge (renewal only)
+  const acqDate=document.getElementById('renewalAcqDate').value;
+  if(acqDate&&currentMode==='ren'){
+    const years=Math.floor((new Date()-new Date(acqDate))/(365.25*24*3600*1000));
+    document.getElementById('ctdYearBadge').textContent=`Year ${years+1}`;
+    document.getElementById('propYearBadge').textContent=`Year ${years+2} Renewal`;
+  }
+  
+  // CTD SAAS
+  const ctdSeats=parseInt(document.getElementById('ctdSeats').value)||0;
+  const ctdDPct=parseFloat(document.getElementById('ctdDiscPct').value)||0;
+  const ctdDDol=parseFloat(document.getElementById('ctdDiscDollar').value)||0;
+  const ctdTier=ctdSeats?lookupTier(ctdSeats):null;
+  const ctdSaasArr=ctdTier?Math.max(0,ctdTier.arr*(1-ctdDPct/100)-ctdDDol):0;
+  const ctdSaasCost=ctdSaasArr*(1-SAAS_MARGIN);
+  document.getElementById('ctdSaasArr').textContent=ctdSaasArr?fmt(ctdSaasArr):'—';
+  const ctdPPS=ctdSeats&&ctdSaasArr?ctdSaasArr/ctdSeats/12:0;
+  document.getElementById('ctdSaasPerSeat').textContent=ctdPPS?`$${ctdPPS.toFixed(2)}/seat/mo`:'';
+  
+  // CTD Actions — use CSV revenue if available, else rate card
+  let ctdActArr=0,ctdActCost=0;
+  renewalPeriods.forEach(p=>{if(p.csvRevenue)ctdActArr+=p.csvRevenue;});
+  if(ctdActArr===0&&Object.keys(ctdMerged).length>0){
+    const ctdDiscNum=parseFloat(document.getElementById('ctdActDisc').textContent)||0;
+    Object.entries(ctdMerged).forEach(([cname,vols])=>{
+      const co=countries.find(c=>c.name===cname);if(!co)return;
+      const cfx=fx[co.currency]||1;
+      for(let vi=0;vi<8;vi++){
+        const qty=vols[vi]||0;if(!qty)continue;
+        const pi=ACTION_PRICE_IDX[vi];
+        if(co.prices[pi])ctdActArr+=co.prices[pi]*qty*(1-ctdDiscNum/100)*cfx;
+      }
+    });
+  }
+  Object.entries(ctdMerged).forEach(([cname,vols])=>{
+    const co=countries.find(c=>c.name===cname);if(!co)return;
+    const cfx=fx[co.currency]||1;
+    for(let vi=0;vi<8;vi++){
+      const qty=vols[vi]||0;if(!qty)continue;
+      const ci=ACTION_COST_IDX[vi];
+      if(co.costs[ci])ctdActCost+=co.costs[ci]*qty*cfx;
+    }
+  });
+  
+  const ctdTotal=ctdSaasArr+ctdActArr;
+  const ctdCost=ctdSaasCost+ctdActCost;
+  const ctdGM=ctdTotal>0?(ctdTotal-ctdCost)/ctdTotal*100:null;
+  document.getElementById('ctdTotalArr').textContent=ctdTotal?fmt(ctdTotal):'—';
+  document.getElementById('ctdSaasArrHero').textContent=ctdSaasArr?fmt(ctdSaasArr):'—';document.getElementById('ctdActArrHero').textContent=ctdActArr?fmt(ctdActArr):'—';
+  const ctdGMEl=document.getElementById('ctdGM');
+  ctdGMEl.textContent=ctdGM!==null?pct(ctdGM):'—';
+  ctdGMEl.className='renewal-metric-val'+gmCls(ctdGM,threshG,threshY);
+  
+  // Proposal SAAS
+  const propSeats=parseInt(document.getElementById('propSeats').value)||0;
+  const propDPct=parseFloat(document.getElementById('propDiscPct').value)||0;
+  const propDDol=parseFloat(document.getElementById('propDiscDollar').value)||0;
+  // Tier override
+  const propIsOvr=document.getElementById('propOverrideTier').value==='yes';
+  const propOvrSel=document.getElementById('propTierOverrideSel');
+  let propTier=propSeats?lookupTier(propSeats):null;
+  if(propIsOvr&&propOvrSel?.value){const t=tiers.find(t=>t.seats===parseInt(propOvrSel.value));if(t)propTier=t;}
+  const propTierPPS=propTier?propTier.arr/propTier.seats/12:0;
+  const propListArr=propTier?(propIsOvr&&propSeats?propTierPPS*propSeats*12:propTier.arr):0;
+  const propSaasArr=propTier?Math.max(0,propListArr*(1-propDPct/100)-propDDol):0;
+  const propSaasCost=propSaasArr*(1-SAAS_MARGIN);
+  
+  // Prop tier badge
+  const propBadge=document.getElementById('propTierBadge');
+  if(propTier){
+    propBadge.textContent=propIsOvr?`$${propTierPPS.toFixed(2)}/seat/mo · ${propTier.seats.toLocaleString()}+ rate`:`${fmt(propTier.arr)}/yr · $${propTierPPS.toFixed(2)}/seat/mo`;
+    propBadge.style.display='inline-flex';
+  } else propBadge.style.display='none';
+  document.getElementById('propSaasArr').textContent=propSaasArr?fmt(propSaasArr):'—';
+  const propPPS=propSeats&&propSaasArr?propSaasArr/propSeats/12:0;
+  document.getElementById('propSaasPerSeat').textContent=propPPS?`$${propPPS.toFixed(2)}/seat/mo`:'';
+  
+  // Proposal Actions from editable inputs distributed by CTD country mix
+  // ── Proposal Action Calc ──────────────────────────────────
+  const hasPropForecast = Object.keys(propForecastVolumes).length > 0;
+  const ctdCountries = Object.keys(ctdMerged);
+  let propActArr=0, propActCost=0, propGrossActArr=0;
+
+  if(hasPropForecast) {
+    // CASE 1: Forecast CSV uploaded → use its per-country volumes directly
+    // This is the primary case for Renewal
+    Object.entries(propForecastVolumes).forEach(([cname, vols]) => {
+      const co = countries.find(c => c.name === cname); if(!co) return;
+      const cfx = fx[co.currency] || 1;
+      for(let vi=0; vi<8; vi++) {
+        const qty = vols[vi] || 0; if(!qty) continue;
+        const pi = ACTION_PRICE_IDX[vi], ci = ACTION_COST_IDX[vi];
+        if(co.prices[pi]) propGrossActArr += co.prices[pi] * qty * cfx;
+      }
+    });
+    initPropActDiscDropdown(propGrossActArr > 0 ? lookupDiscount(propGrossActArr)*100 : 0);
+    const propDiscNum = getPropActDisc(propGrossActArr);
+    Object.entries(propForecastVolumes).forEach(([cname, vols]) => {
+      const co = countries.find(c => c.name === cname); if(!co) return;
+      const cfx = fx[co.currency] || 1;
+      for(let vi=0; vi<8; vi++) {
+        const qty = vols[vi] || 0; if(!qty) continue;
+        const pi = ACTION_PRICE_IDX[vi], ci = ACTION_COST_IDX[vi];
+        if(co.prices[pi]) propActArr  += co.prices[pi] * qty * (1-propDiscNum/100) * cfx;
+        if(co.costs[ci])  propActCost += co.costs[ci]  * qty * cfx;
+      }
+    });
+    // Update vol summary display from forecast
+    renderVolSummary('propVolSummary', propForecastVolumes, true);
+
+  } else if(ctdCountries.length > 0) {
+    // CASE 2: No forecast but CTD loaded → distribute editable inputs by CTD country mix
+    const propVolTotals = [0,0,0,0,0,0,0,0];
+    for(let vi=0; vi<8; vi++) {
+      const inp = document.getElementById(`propVol_${vi}`);
+      if(inp) propVolTotals[vi] = parseInt(inp.value) || 0;
+    }
+    const ctdTypeTotals = [0,0,0,0,0,0,0,0];
+    Object.values(ctdMerged).forEach(v => v.forEach((q,i) => ctdTypeTotals[i] += q));
+    ctdCountries.forEach(cname => {
+      const co = countries.find(c => c.name === cname); if(!co) return;
+      const cfx = fx[co.currency] || 1;
+      const cVols = ctdMerged[cname];
+      for(let vi=0; vi<8; vi++) {
+        const share = ctdTypeTotals[vi] > 0 ? cVols[vi]/ctdTypeTotals[vi] : 0;
+        const qty = Math.round(propVolTotals[vi] * share); if(!qty) continue;
+        const pi = ACTION_PRICE_IDX[vi], ci = ACTION_COST_IDX[vi];
+        if(co.prices[pi]) propGrossActArr += co.prices[pi] * qty * cfx;
+      }
+    });
+    initPropActDiscDropdown(propGrossActArr > 0 ? lookupDiscount(propGrossActArr)*100 : 0);
+    const propDiscNum = getPropActDisc(propGrossActArr);
+    ctdCountries.forEach(cname => {
+      const co = countries.find(c => c.name === cname); if(!co) return;
+      const cfx = fx[co.currency] || 1;
+      const cVols = ctdMerged[cname];
+      const ctdTT = [0,0,0,0,0,0,0,0];
+      Object.values(ctdMerged).forEach(v => v.forEach((q,i) => ctdTT[i] += q));
+      for(let vi=0; vi<8; vi++) {
+        const share = ctdTT[vi] > 0 ? cVols[vi]/ctdTT[vi] : 0;
+        const qty = Math.round(propVolTotals[vi] * share); if(!qty) continue;
+        const pi = ACTION_PRICE_IDX[vi], ci = ACTION_COST_IDX[vi];
+        if(co.prices[pi]) propActArr  += co.prices[pi] * qty * (1-propDiscNum/100) * cfx;
+        if(co.costs[ci])  propActCost += co.costs[ci]  * qty * cfx;
+      }
+    });
+
+  } else {
+    // CASE 3: Nothing uploaded → use Actions tab (New Deal) volumes
+    const r = calcActionsResult(fx);
+    propGrossActArr = r.grossRev;
+    initPropActDiscDropdown(propGrossActArr > 0 ? lookupDiscount(propGrossActArr)*100 : 0);
+    const propDiscNum = getPropActDisc(propGrossActArr);
+    propActArr  = propGrossActArr * (1 - propDiscNum/100);
+    propActCost = r.cost;
+  }
+
+  // Action discount badge + mismatch flag
+  const propActDiscBadge = document.getElementById('propActDiscBadge');
+  const propActDiscVal = getPropActDisc(propGrossActArr);
+  if(propActDiscBadge) {
+    if(propGrossActArr > 0) {
+      propActDiscBadge.textContent = `${fmt(propGrossActArr)} → ${propActDiscVal.toFixed(1)}% discount`;
+      propActDiscBadge.style.display = 'inline-flex';
+    } else propActDiscBadge.style.display = 'none';
+  }
+  const ctdDiscNum = parseFloat(document.getElementById('ctdActDisc').textContent) || 0;
+  const mm = document.getElementById('propDiscMismatch');
+  if(mm && ctdDiscNum && propActDiscVal && Math.abs(ctdDiscNum - propActDiscVal) > 0.5) {
+    mm.textContent = `⚠ CTD was ${ctdDiscNum.toFixed(1)}%`; mm.classList.remove('hidden');
+  } else if(mm) mm.classList.add('hidden');
+  const propTotal=propSaasArr+propActArr;
+  const propCost=propSaasCost+propActCost+(getTotalStorageCost());
+  const propGM=propTotal>0?(propTotal-propCost)/propTotal*100:null;
+  
+  document.getElementById('propTotalArr').textContent=propTotal?fmt(propTotal):'—';
+  document.getElementById('propSaasArrHero').textContent=propSaasArr?fmt(propSaasArr):'—';document.getElementById('propActArrHero').textContent=propActArr?fmt(propActArr):'—';
+  const propGMEl=document.getElementById('propGM');
+  propGMEl.textContent=propGM!==null?pct(propGM):'—';
+  propGMEl.className='renewal-metric-val'+gmCls(propGM,threshG,threshY);
+  
+  // Update approval banner only when proposal has actual data
+  const customer_bi = document.getElementById('biCustomer').value||'';
+  if(propTotal > 0 && propSaasArr > 0) {
+    updateApprovalBanner(propGM,threshG,threshY,customer_bi,propSaasArr,propActArr,propTotal);
+  } else if(ctdTotal > 0 && propTotal === 0) {
+    // CTD loaded but no proposal yet — show neutral informational state
+    const b=document.getElementById('approvalBanner');
+    b.className='approval-banner';
+    document.getElementById('approvalIcon').textContent='📋';
+    document.getElementById('approvalTitle').textContent='Contract to Date loaded';
+    document.getElementById('approvalSub').textContent=`CTD: ${fmt(ctdTotal)} ARR · ${ctdGM!==null?pct(ctdGM)+' GM':''} — now enter proposal terms`;
+    document.getElementById('approvalGM').textContent=ctdGM!==null?pct(ctdGM):'—';
+    document.getElementById('approvalCustomer').textContent=customer_bi;
+    document.getElementById('metaSaasArr').textContent=ctdSaasArr?fmt(ctdSaasArr):'—';
+    document.getElementById('metaActArr').textContent=ctdActArr?fmt(ctdActArr):'—';
+    document.getElementById('metaTotalArr').textContent=ctdTotal?fmt(ctdTotal):'—';
+  } else {
+    // Nothing loaded yet
+    const b=document.getElementById('approvalBanner');
+    b.className='approval-banner';
+    document.getElementById('approvalIcon').textContent='—';
+    document.getElementById('approvalTitle').textContent='Enter deal details';
+    document.getElementById('approvalSub').textContent='Upload CTD CSV and enter renewal proposal to calculate margin';
+    document.getElementById('approvalGM').textContent='—';
+  }
+  
+  // Delta
+  if(ctdTotal&&propTotal){
+    const dArr=(propTotal-ctdTotal)/ctdTotal*100;
+    const dGM=propGM!==null&&ctdGM!==null?propGM-ctdGM:null;
+    const daEl=document.getElementById('deltaArr');
+    daEl.textContent=`${dArr>=0?'+':''}${dArr.toFixed(1)}% ARR`;
+    daEl.className=`delta-badge ${dArr>=0?'up':'down'}`;
+    if(dGM!==null){
+      const dgEl=document.getElementById('deltaGM');
+      dgEl.textContent=`${dGM>=0?'+':''}${dGM.toFixed(1)}pp GM`;
+      dgEl.className=`delta-badge ${dGM>=0?'up':'down'}`;
+    }
+    document.getElementById('deltaRow').style.display='flex';
+  }
+}
+
+// ── PROPOSAL FORECAST UPLOAD (Renewal right column) ──────────
+function handlePropUpload(event) {
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const rows=parseCSV(e.target.result);
+    if(rows.length<2) return;
+    const result=applyDetailedCSV(rows,'prop');
+    const {matched,totalActions,format}=result;
+    const uz=document.getElementById('propDropZone');
+    if(matched>0){
+      uz.classList.add('success');
+      document.getElementById('propUploadTitle').textContent=`✓ ${matched} countries · ${totalActions} actions`;
+      document.getElementById('propUploadStatus').textContent=`${format==='forecast'?'AE forecast':'Order-level'} format`;
+      // Push into propVolSummary
+      renderVolSummary('propVolSummary', propForecastVolumes, true);
+    } else {
+      document.getElementById('propUploadTitle').textContent='⚠ No countries matched — check format';
+    }
+    event.target.value='';
+    renderBiHero();
+  };
+  reader.readAsText(file);
+}
+
+function handlePropDrop(evt) {
+  evt.preventDefault();
+  document.getElementById('propDropZone').classList.remove('dragover');
+  const file=evt.dataTransfer.files[0]; if(!file) return;
+  handlePropUpload({target:{files:[file]}});
+}
+
+function onPropActDiscChange(){
+  const sel=document.getElementById('propActDiscSel');
+  const wrap=document.getElementById('propActDiscCustomWrap');
+  if(wrap) wrap.style.display=sel?.value==='custom'?'flex':'none';
+  renderBiHero();
+}
+
+function toggleGri() {
+  const body=document.getElementById('griBannerBody');
+  const lbl=document.getElementById('griToggle');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  lbl.textContent=open?'Hide ▲':'Show ▼';
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function buildStorageTable() {
+  const tbody=document.getElementById('storageBody');if(!tbody)return;
+  let html='',totalCost=0;
+  countries.forEach(co=>{
+    const v=storageVolumes[co.name]||{laptops:0,peripherals:0,monitors:0};
+    const r=storageRates[co.name]||[0,0,0];
+    const annual=getAnnualStorageCost(co.name);
+    totalCost+=annual;
+    const hasStorage=annual>0;
+    html+=`<tr style="${hasStorage?'background:rgba(212,143,0,0.06);':''}">
+      <td style="font-weight:${hasStorage?'600':'400'};color:${hasStorage?'var(--text)':'var(--text2)'};">${co.name}</td>
+      <td style="text-align:center;">
+        <input type="number" min="0" value="${v.laptops||0}"
+          data-country="${co.name}" data-dtype="laptops"
+          style="width:72px;" oninput="onStorageInput(this)"></td>
+      <td>$${r[0]}/mo</td>
+      <td style="text-align:center;">
+        <input type="number" min="0" value="${v.peripherals||0}"
+          data-country="${co.name}" data-dtype="peripherals"
+          style="width:72px;" oninput="onStorageInput(this)"></td>
+      <td>$${r[1]}/mo</td>
+      <td style="text-align:center;">
+        <input type="number" min="0" value="${v.monitors||0}"
+          data-country="${co.name}" data-dtype="monitors"
+          style="width:72px;" oninput="onStorageInput(this)"></td>
+      <td>$${r[2]}/mo</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:${annual>0?'var(--red)':'var(--text3)'};">
+        ${annual>0?'$'+Math.round(annual).toLocaleString():'—'}</td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+  const totalEl=document.getElementById('storageTotalCost');
+  if(totalEl)totalEl.textContent=totalCost>0?'$'+Math.round(totalCost).toLocaleString():'—';
+}
+
+function onStorageInput(inp) {
+  const c=inp.dataset.country,dt=inp.dataset.dtype;
+  if(!storageVolumes[c])storageVolumes[c]={laptops:0,peripherals:0,monitors:0};
+  storageVolumes[c][dt]=parseInt(inp.value)||0;
+  recalc();
+}
+
+function getAnnualStorageCost(countryName) {
+  const v=storageVolumes[countryName]||{laptops:0,peripherals:0,monitors:0};
+  const r=storageRates[countryName]||[0,0,0];
+  return(v.laptops*r[0]+v.peripherals*r[1]+v.monitors*r[2])*12;
+}
+
+function getTotalStorageCost() {
+  return countries.reduce((s,c)=>s+getAnnualStorageCost(c.name),0);
+}
+
+function clearStorageVolumes() {
+  countries.forEach(c=>storageVolumes[c.name]={laptops:0,peripherals:0,monitors:0});
+  buildStorageTable();recalc();
+}
+
+// ============================================================
+// ACTION DISCOUNT DROPDOWN
+// ============================================================
+function populateActDiscDropdown(autoDiscPct) {
+  const sel=document.getElementById('actDiscSel');if(!sel)return;
+  const cur=sel.value;
+  if(sel.dataset.lastAuto===String(autoDiscPct)&&sel.options.length>1)return;
+  sel.innerHTML=`<option value="auto">Auto${autoDiscPct>0?' — '+autoDiscPct.toFixed(1)+'% (qualified)':' — from volume tier'}</option>`;
+  actionDiscounts.forEach(d=>{
+    if(d.discount===0)return;
+    const pct=d.discount*100;
+    const opt=document.createElement('option');
+    opt.value=pct.toFixed(1);
+    opt.textContent=pct.toFixed(1)+'%'+(Math.abs(pct-autoDiscPct)<0.1?' ← qualified':'');
+    sel.appendChild(opt);
+  });
+  // Custom option at bottom
+  const customOpt=document.createElement('option');
+  customOpt.value='custom'; customOpt.textContent='Custom %…';
+  sel.appendChild(customOpt);
+  const match=Array.from(sel.options).find(o=>o.value===cur);
+  if(match)sel.value=cur;
+  sel.dataset.lastAuto=String(autoDiscPct);
+}
+
+function getSelectedActDisc(grossActArr) {
+  const sel=document.getElementById('actDiscSel');
+  if(!sel||sel.value==='auto') return lookupDiscount(grossActArr);
+  if(sel.value==='custom') {
+    const v=parseFloat(document.getElementById('actDiscCustom')?.value)||0;
+    return v/100;
+  }
+  return parseFloat(sel.value)/100||0;
+}
+
+function onActDiscChange(){
+  const sel=document.getElementById('actDiscSel');
+  const wrap=document.getElementById('actDiscCustomWrap');
+  if(wrap) wrap.style.display=sel?.value==='custom'?'flex':'none';
+  recalc();
+}
+
+function initPropActDiscDropdown(autoDiscPct) {
+  const sel=document.getElementById('propActDiscSel');if(!sel)return;
+  if(sel.dataset.lastAuto===String(autoDiscPct)&&sel.options.length>1)return;
+  const cur=sel.value;
+  sel.innerHTML=`<option value="auto">Auto${autoDiscPct>0?' — '+autoDiscPct.toFixed(1)+'% (qualified)':' — from volume tier'}</option>`;
+  actionDiscounts.forEach(d=>{
+    if(d.discount===0)return;
+    const pct=d.discount*100;
+    const opt=document.createElement('option');
+    opt.value=pct.toFixed(1);
+    opt.textContent=pct.toFixed(1)+'%'+(Math.abs(pct-autoDiscPct)<0.1?' ← qualified':'');
+    sel.appendChild(opt);
+  });
+  const match=Array.from(sel.options).find(o=>o.value===cur);
+  if(match)sel.value=cur;
+  sel.dataset.lastAuto=String(autoDiscPct);
+}
+
+function getPropActDisc(grossActArr) {
+  const sel=document.getElementById('propActDiscSel');
+  if(!sel||sel.value==='auto')return lookupDiscount(grossActArr)*100;
+  return parseFloat(sel.value)||0;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function setMode(mode, btn) {
+  currentMode=mode;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  
+  const isBi=mode==='exp'||mode==='ren';
+  
+  // Update nav tabs
+  document.getElementById('navCalc').textContent=isBi?(mode==='exp'?'Overview':'Overview'):'Calculator';
+  
+  // Set bimodal column labels
+  if(mode==='exp'){
+    document.getElementById('colLeftTitle').textContent='Current Contract';
+    document.getElementById('colLeftSub').textContent='Enter current contract terms manually';
+    document.getElementById('csvUploadSection').style.display='none';
+    document.getElementById('acqDateField').style.display='none';
+    document.getElementById('ctdYearBadge').textContent='Current';
+    document.getElementById('propYearBadge').textContent='Expansion';
+    document.getElementById('propYearBadge').style.background='rgba(224,112,32,0.12)';
+    document.getElementById('propYearBadge').style.color='var(--orange)';
+    document.getElementById('colRightTitle').textContent='Proposed Expansion';
+    document.getElementById('griBanner').classList.add('hidden');
+    document.getElementById('propCsvSection').style.display='none';
+    // Clear all bimodal data
+    renewalPeriods=[]; propForecastVolumes={};
+    document.getElementById('ctdActDisc').textContent='—';
+    document.getElementById('ctdVolSummary').innerHTML='<div style="font-size:11px;color:var(--text3);">Enter action volumes in the Actions tab</div>';
+    document.getElementById('propVolSummary').innerHTML='<div style="font-size:11px;color:var(--text3);">Pre-fills from Actions tab or upload forecast CSV</div>';
+  } else if(mode==='ren'){
+    document.getElementById('colLeftTitle').textContent='Contract to Date';
+    document.getElementById('colLeftSub').textContent='Upload CSV to populate from actuals';
+    document.getElementById('csvUploadSection').style.display='block';
+    document.getElementById('acqDateField').style.display='';
+    document.getElementById('ctdYearBadge').textContent='—';
+    document.getElementById('propYearBadge').textContent='—';
+    document.getElementById('propYearBadge').style.background='var(--accent-dim)';
+    document.getElementById('propYearBadge').style.color='var(--accent)';
+    document.getElementById('colRightTitle').textContent='Renewal Proposal';
+    document.getElementById('propCsvSection').style.display='block';
+  }
+  
+  if(isBi){
+    showPage('calc',document.getElementById('navCalc')); // resolves to 'bimodal' in showPage
+    renderBiHero();
+  } else {
+    showPage('calc',document.getElementById('navCalc'));
+    recalc();
+  }
+}
+
+function showPage(pageId, btn) {
+  document.querySelectorAll('.page,.two-col-page').forEach(p=>{
+    p.classList.remove('active');
+  });
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  // In bimodal modes, 'calc' maps to 'bimodal'
+  const resolvedId = (pageId==='calc' && (currentMode==='exp'||currentMode==='ren')) ? 'bimodal' : pageId;
+  const page=document.getElementById('page-'+resolvedId);
+  if(page)page.classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(pageId==='settings')renderSettingsTables();
+  if(pageId==='storage'){buildStorageTable();}
+  if(pageId==='actions'){
+    buildActionsTable();
+  }
+  if(pageId==='bimodal')renderBiHero();
+}
+
+// ============================================================
+// SEAT OVERRIDES
+// ============================================================
+function onSeatsChange(){buildTierSelect();recalc();}
+
+function buildTierSelect() {
+  const sel=document.getElementById('tierOverrideSelect');
+  if(!sel||sel.options.length>1)return;
+  tiers.forEach(t=>{
+    const pps=t.arr/t.seats/12;
+    const opt=document.createElement('option');
+    opt.value=t.seats;
+    opt.textContent=`${t.seats.toLocaleString()} seats — ${fmt(t.arr)}/yr ($${pps.toFixed(2)}/seat/mo)`;
+    sel.appendChild(opt);
+  });
+  // Prop override
+  const psel=document.getElementById('propTierOverrideSel');
+  if(psel&&psel.options.length<=1){
+    tiers.forEach(t=>{
+      const pps=t.arr/t.seats/12;
+      const opt=document.createElement('option');
+      opt.value=t.seats;
+      opt.textContent=`${t.seats.toLocaleString()} seats — $${pps.toFixed(2)}/seat/mo`;
+      psel.appendChild(opt);
+    });
+  }
+}
+
+function onOverrideChange(){
+  document.getElementById('tierOverrideField').style.display=
+    document.getElementById('overrideTier').value==='yes'?'block':'none';
+  recalc();
+}
+
+function onPropOverrideChange(){
+  document.getElementById('propTierOverrideWrap').style.display=
+    document.getElementById('propOverrideTier').value==='yes'?'block':'none';
+  renderBiHero();
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettingsTables(){
+  // Tiers
+  const tb=document.getElementById('tiersBody');
+  if(tb)tb.innerHTML=tiers.map(t=>`<tr><td>${t.seats.toLocaleString()}+</td><td>${fmt(t.arr)}</td><td>$${(t.arr/t.seats).toFixed(2)}</td><td>$${(t.arr/t.seats/12).toFixed(2)}</td></tr>`).join('');
+  // Discounts
+  const db=document.getElementById('discBody');
+  if(db)db.innerHTML=actionDiscounts.map(d=>`<tr><td>${d.minArr>0?fmt(d.minArr)+'+':'Any'}</td><td>${(d.discount*100).toFixed(1)}%</td></tr>`).join('');
+  // Rate card
+  const rb=document.getElementById('rateCardBody');
+  const symMap={GBP:'£',EUR:'€',CAD:'CA$',USD:'$'};
+  const priceIdx=[0,4,5,6,7,1,2,3];
+  if(rb)rb.innerHTML=countries.map(co=>{
+    const sym=symMap[co.currency]||'$';
+    return `<tr><td>${co.name}</td><td>${co.currency}</td>${priceIdx.map(i=>`<td>${co.prices[i]!=null?sym+co.prices[i]:'—'}</td>`).join('')}</tr>`;
+  }).join('');
+  // Storage rates
+  const srb=document.getElementById('storageRatesBody');
+  if(srb)srb.innerHTML=countries.map(co=>{
+    const r=storageRates[co.name]||[0,0,0];
+    return `<tr><td>${co.name}</td>
+      <td><input type="number" min="0" step="0.01" value="${r[0]}" style="width:80px;"
+        oninput="setStorageRate('${co.name}',0,this.value)"></td>
+      <td><input type="number" min="0" step="0.01" value="${r[1]}" style="width:80px;"
+        oninput="setStorageRate('${co.name}',1,this.value)"></td>
+      <td><input type="number" min="0" step="0.01" value="${r[2]}" style="width:80px;"
+        oninput="setStorageRate('${co.name}',2,this.value)"></td>
+    </tr>`;
+  }).join('');
+}
+
+function setStorageRate(country,idx,val){
+  if(!storageRates[country])storageRates[country]=[0,0,0];
+  storageRates[country][idx]=parseFloat(val)||0;
+  if(currentMode!=='new')renderBiHero();else recalc();
+}
+
+function resetStorageRates(){storageRates=JSON.parse(JSON.stringify(FALLBACK_STORAGE_RATES));renderSettingsTables();}
+
+function renderFxInputs(){
+  const pairs=[['GBP','£ GBP',1.27],['EUR','€ EUR',1.08],['CAD','CA$ CAD',0.74],
+               ['AUD','A$ AUD',0.65],['NZD','NZ$ NZD',0.60],['MYR','MYR',0.22]];
+  document.getElementById('fxInputsContainer').innerHTML=pairs.map(([cur,label,def])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:12px;color:var(--text2);min-width:70px;">${label}</span>
+      <div class="input-with-prefix" style="width:130px;">
+        <span class="prefix" style="font-size:10px;left:6px;">1 USD =</span>
+        <input type="number" class="fx-input" data-cur="${cur}" value="${def}" step="0.001"
+          style="padding-left:52px;" oninput="FX_RATES['${cur}']=parseFloat(this.value)||${def};recalc();">
+      </div>
+    </div>`).join('');
+}
+
+function resetFxRates(){
+  document.querySelectorAll('.fx-input').forEach(inp=>{
+    const def={GBP:1.27,EUR:1.08,CAD:0.74,AUD:0.65,NZD:0.60,MYR:0.22}[inp.dataset.cur]||1;
+    inp.value=def;FX_RATES[inp.dataset.cur]=def;
+  });
+  recalc();
+}
+
+function saveSubmitUrl(){
+  SUBMIT_URL=document.getElementById('submitUrlInput').value.trim();
+  localStorage.setItem('fb_submit_url',SUBMIT_URL);
+  document.getElementById('submitUrlStatus').textContent=SUBMIT_URL?'✓ Saved':'Cleared';
+  setTimeout(()=>document.getElementById('submitUrlStatus').textContent='',2000);
+}
+
+async function testSubmitUrl(){
+  if(!SUBMIT_URL){document.getElementById('submitUrlStatus').textContent='No URL set';return;}
+  document.getElementById('submitUrlStatus').textContent='Testing…';
+  try{
+    const r=await fetch(SUBMIT_URL);const j=await r.json();
+    document.getElementById('submitUrlStatus').textContent=j.status==='ok'?'✓ Connected':'⚠ Unexpected response';
+  }catch(e){document.getElementById('submitUrlStatus').textContent='✗ Failed: '+e.message;}
+}
+
+// ============================================================
+// SUBMIT
+// ============================================================
+function openSubmitModal(){
+  const gm=currentMode==='new'
+    ?parseFloat(document.getElementById('approvalGM').textContent)
+    :parseFloat(document.getElementById('propGM').textContent);
+  const threshY=parseFloat(document.getElementById('threshYellow').value)||65;
+  const needsEx=!isNaN(gm)&&gm<threshY;
+  document.getElementById('exceptionGroup').style.display=needsEx?'block':'none';
+  
+  let summary='';
+  const modeLabel=currentMode==='new'?'New Deal':currentMode==='exp'?'Expansion':'Renewal';
+  if(currentMode==='new'){
+    const r=recalc()||{};
+    summary=`Customer: ${document.getElementById('customerName').value||'—'}
+AE: ${document.getElementById('aeName').value||'—'}
+Type: New Deal
+SAAS ARR: ${document.getElementById('metaSaasArr').textContent}
+Actions ARR: ${document.getElementById('metaActArr').textContent}
+Total ARR: ${document.getElementById('metaTotalArr').textContent}
+GM%: ${document.getElementById('approvalGM').textContent}
+Status: ${document.getElementById('approvalTitle').textContent}`;
+  } else {
+    summary=`Customer: ${document.getElementById('biCustomer').value||'—'}
+Type: ${modeLabel}
+Current ARR: ${document.getElementById('ctdTotalArr').textContent} @ ${document.getElementById('ctdGM').textContent} GM
+Proposed ARR: ${document.getElementById('propTotalArr').textContent} @ ${document.getElementById('propGM').textContent} GM
+Status: ${document.getElementById('approvalTitle').textContent}`;
+  }
+  document.getElementById('submitSummary').textContent=summary;
+  document.getElementById('submitModal').classList.add('open');
+}
+
+function closeSubmitModal(){document.getElementById('submitModal').classList.remove('open');}
+
+async function submitDeal(){
+  if(!SUBMIT_URL){
+    const url=prompt('Enter your Apps Script URL (Apps Script -> Deploy -> Manage Deployments):');
+    if(!url||!url.trim()){return;}
+    SUBMIT_URL=url.trim();
+    localStorage.setItem('fb_submit_url',SUBMIT_URL);
+    document.getElementById('submitUrlInput').value=SUBMIT_URL;
+  }
+  const ae=document.getElementById('modalAe').value.trim();
+  const exception=document.getElementById('exceptionReason').value.trim();
+  const threshY=parseFloat(document.getElementById('threshYellow').value)||65;
+  
+  const dealTypeMap={new:'New Deal',exp:'Expansion',ren:'Renewal'};
+  let payload={timestamp:new Date().toISOString(),ae,dealType:dealTypeMap[currentMode],exceptionReason:exception||''};
+  
+  if(currentMode==='new'){
+    const gm=parseFloat(document.getElementById('approvalGM').textContent)||null;
+    if(!isNaN(gm)&&gm<threshY&&!exception){alert('Exception reason required.');return;}
+    payload={...payload,
+      customer:document.getElementById('customerName').value||'',
+      seats:parseInt(document.getElementById('seats').value)||0,
+      discPct:parseFloat(document.getElementById('discPct').value)||0,
+      discDollar:parseFloat(document.getElementById('discDollar').value)||0,
+      saasArr:parseFloat(document.getElementById('metaSaasArr').textContent?.replace(/[$,K]/g,''))*1000||0,
+      actionsArr:parseFloat(document.getElementById('metaActArr').textContent?.replace(/[$,K]/g,''))*1000||0,
+      totalArr:parseFloat(document.getElementById('metaTotalArr').textContent?.replace(/[$,K]/g,''))*1000||0,
+      gmPct:parseFloat(document.getElementById('approvalGM').textContent)||null,
+      approvalStatus:document.getElementById('approvalTitle').textContent,
+    };
+  } else {
+    const gm=parseFloat(document.getElementById('propGM').textContent)||null;
+    if(!isNaN(gm)&&gm<threshY&&!exception){alert('Exception reason required.');return;}
+    payload={...payload,
+      customer:document.getElementById('biCustomer').value||'',
+      ctdArr:document.getElementById('ctdTotalArr').textContent,
+      ctdGM:document.getElementById('ctdGM').textContent,
+      proposalArr:document.getElementById('propTotalArr').textContent,
+      gmPct:gm,
+      approvalStatus:document.getElementById('approvalTitle').textContent,
+    };
+  }
+  
+  document.getElementById('submitBtn').textContent='Submitting…';
+  document.getElementById('submitBtn').disabled=true;
+  try{
+    const r=await fetch(SUBMIT_URL,{
+      method:'POST',
+      body:JSON.stringify(payload),
+      redirect:'follow',
+      headers:{'Content-Type':'text/plain'} // Apps Script needs text/plain to avoid CORS preflight
+    });
+    const j=await r.json();
+    if(j.error)throw new Error(j.error);
+    closeSubmitModal();alert('✓ Deal submitted!');
+  }catch(e){alert('Submit failed: '+e.message);}
+  finally{document.getElementById('submitBtn').textContent='Submit Deal';document.getElementById('submitBtn').disabled=false;}
+}
+
+function copySnapshot(){
+  const gm=document.getElementById('approvalGM').textContent;
+  const saas=document.getElementById('metaSaasArr').textContent;
+  const act=document.getElementById('metaActArr').textContent;
+  const tot=document.getElementById('metaTotalArr').textContent;
+  const st=document.getElementById('approvalTitle').textContent;
+  const nm=currentMode==='new'?document.getElementById('customerName').value:document.getElementById('biCustomer').value;
+  const ae=document.getElementById(currentMode==='new'?'aeName':'modalAe').value||document.getElementById('aeName').value||'—';
+  const modeLabel=currentMode==='new'?'New Deal':currentMode==='exp'?'Expansion':'Renewal';
+  const lines=[
+    `Firstbase Deal Margin Snapshot`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `Customer:    ${nm||'—'}`,
+    `AE:          ${ae}`,
+    `Deal Type:   ${modeLabel}`,
+    `Date:        ${new Date().toLocaleDateString()}`,
+    ``,
+    `SAAS ARR:    ${saas}`,
+    `Actions ARR: ${act}`,
+    `Total ARR:   ${tot}`,
+    `GM%:         ${gm}`,
+    `Status:      ${st}`,
+  ];
+  const text=lines.join('\n');
+  // Use fallback for file:// protocol where clipboard API may not work
+  try {
+    if(navigator.clipboard&&location.protocol!=='file:'){
+      navigator.clipboard.writeText(text).then(()=>alert('✓ Snapshot copied to clipboard'));
+    } else {
+      // Fallback: create textarea, select, copy
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('✓ Snapshot copied to clipboard');
+    }
+  } catch(e) {
+    // Last resort: show in alert
+    alert('Copy this snapshot:\n\n'+text);
+  }
+}
+
+// ============================================================
+// PDF / PRINT
+// ============================================================
+function downloadPDF() {
+  const isNew = currentMode==='new';
+  const customer = isNew
+    ? (document.getElementById('customerName').value||'Deal')
+    : (document.getElementById('biCustomer').value||'Deal');
+  const ae = document.getElementById('aeName').value||'—';
+  const modeLabel = isNew?'New Deal':currentMode==='exp'?'Expansion':'Renewal';
+  const gm = document.getElementById('approvalGM').textContent;
+  const status = document.getElementById('approvalTitle').textContent;
+  const saasArr = document.getElementById('metaSaasArr').textContent;
+  const actArr = document.getElementById('metaActArr').textContent;
+  const totalArr = document.getElementById('metaTotalArr').textContent;
+
+  // Get breakdown table HTML
+  const breakdownHTML = document.querySelector('.breakdown-wrap')?.outerHTML||'';
+
+  // Build bimodal summary
+  let biHtml = '';
+  if(!isNew){
+    const ctdTotal=document.getElementById('ctdTotalArr').textContent;
+    const ctdGM=document.getElementById('ctdGM').textContent;
+    const propTotal=document.getElementById('propTotalArr').textContent;
+    const propGM=document.getElementById('propGM').textContent;
+    const dArr=document.getElementById('deltaArr').textContent;
+    const dGM=document.getElementById('deltaGM').textContent;
+    biHtml=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;">
+      <div style="background:#f4f5f7;border-radius:10px;padding:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7c879e;margin-bottom:8px;">Current</div>
+        <div style="font-family:monospace;font-size:20px;font-weight:600;">${ctdTotal}</div>
+        <div style="font-size:12px;color:#7c879e;margin-top:2px;">Total ARR · ${ctdGM} GM</div>
+      </div>
+      <div style="background:#f0f3fb;border-radius:10px;padding:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7c879e;margin-bottom:8px;">Proposed</div>
+        <div style="font-family:monospace;font-size:20px;font-weight:600;">${propTotal}</div>
+        <div style="font-size:12px;color:#7c879e;margin-top:2px;">Total ARR · ${propGM} GM</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <span style="font-family:monospace;font-size:11px;background:${dArr.startsWith('+')?'#d4f4e3':'#f8d7da'};color:${dArr.startsWith('+')?'#1a5c3a':'#842029'};padding:3px 10px;border-radius:20px;">${dArr}</span>
+      <span style="font-family:monospace;font-size:11px;background:${dGM.startsWith('+')?'#d4f4e3':'#f8d7da'};color:${dGM.startsWith('+')?'#1a5c3a':'#842029'};padding:3px 10px;border-radius:20px;">${dGM}</span>
+    </div>`;
+  }
+
+  const gmColor = gm.replace('%','')>=70?'#1a9e5c':gm.replace('%','')>=65?'#d48f00':'#dc2626';
+
+  const html=`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Firstbase Deal Margin — ${customer}</title>
+    <style>
+      body{font-family:'DM Sans',system-ui,sans-serif;margin:0;padding:32px;color:#030E24;background:#fff;font-size:13px;}
+      .header{background:#030E24;color:#fff;padding:16px 24px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+      .header-logo{font-family:monospace;font-size:11px;letter-spacing:2px;opacity:0.7;}
+      .header-meta{font-size:11px;opacity:0.6;}
+      .banner{border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+      .approved{background:#d4f4e3;border:1px solid #1a9e5c;}
+      .seek{background:#fff3cd;border:1px solid #d48f00;}
+      .rejected{background:#f8d7da;border:1px solid #dc2626;}
+      .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#dde0e8;border:1px solid #dde0e8;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+      .metric{background:#fff;padding:12px 14px;}
+      .metric-key{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#7c879e;margin-bottom:4px;}
+      .metric-val{font-family:monospace;font-size:17px;font-weight:500;}
+      table{width:100%;border-collapse:collapse;font-size:11px;}
+      th{font-family:monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:#7c879e;padding:8px 8px;border-bottom:1px solid #dde0e8;background:#f0f1f4;text-align:right;}
+      th:first-child{text-align:left;}
+      td{font-family:monospace;padding:6px 8px;border-bottom:1px solid #dde0e8;text-align:right;}
+      td:first-child{text-align:left;font-family:system-ui;}
+      .total-row td{font-weight:700;background:#f0f1f4;}
+      .pill{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;}
+      .high{background:#d4f4e3;color:#1a5c3a;}
+      .mid{background:#fff3cd;color:#856404;}
+      .low{background:#f8d7da;color:#842029;}
+      .footer{margin-top:20px;font-size:10px;color:#7c879e;border-top:1px solid #dde0e8;padding-top:12px;}
+    </style>
+  </head><body>
+    <div class="header">
+      <div class="header-logo">FIRSTBASE · DEAL MARGIN</div>
+      <div class="header-meta">Generated ${new Date().toLocaleDateString()} · ${modeLabel}</div>
+    </div>
+    <div class="banner ${status.toLowerCase().includes('approved')?'approved':status.toLowerCase().includes('seek')?'seek':'rejected'}">
+      <div>
+        <div style="font-size:16px;font-weight:600;">${status}</div>
+        <div style="font-size:12px;margin-top:2px;opacity:0.8;">${customer} · AE: ${ae}</div>
+      </div>
+      <div style="font-family:monospace;font-size:30px;font-weight:500;color:${gmColor};">${gm}</div>
+    </div>
+    ${biHtml}
+    ${isNew?`<div class="metrics">
+      <div class="metric"><div class="metric-key">SAAS ARR</div><div class="metric-val">${saasArr}</div></div>
+      <div class="metric"><div class="metric-key">Actions ARR</div><div class="metric-val">${actArr}</div></div>
+      <div class="metric"><div class="metric-key">Total ARR</div><div class="metric-val">${totalArr}</div></div>
+      <div class="metric"><div class="metric-key">Blended GM%</div><div class="metric-val" style="color:${gmColor};">${gm}</div></div>
+    </div>`:''}
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#7c879e;margin-bottom:6px;">Action Breakdown</div>
+    ${breakdownHTML.replace(/class="margin-pill high"/g,'class="pill high"').replace(/class="margin-pill mid"/g,'class="pill mid"').replace(/class="margin-pill low"/g,'class="pill low"')}
+    <div class="footer">Firstbase Deal Margin Calculator · ${new Date().toISOString()}</div>
+  </body></html>`;
+
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const win=window.open(url,'_blank');
+  if(win){setTimeout(()=>{win.print();},800);}
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function fmt(n){
+  if(n>=1000000)return'$'+(n/1000000).toFixed(2)+'M';
+  if(n>=1000)return'$'+(n/1000).toFixed(1)+'K';
+  return'$'+Math.round(n).toLocaleString();
+}
+function pct(n){return n.toFixed(1)+'%';}
+function gmCls(gm,threshG,threshY){
+  if(gm===null)return'';
+  if(gm>=threshG)return' green';
+  if(gm>=threshY)return' yellow';
+  return' red';
+}
+</script>
+</body>
+</html>
